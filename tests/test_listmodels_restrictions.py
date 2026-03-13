@@ -236,7 +236,7 @@ class TestListModelsRestrictions(unittest.TestCase):
         self.mock_openrouter.list_models.assert_not_called()
 
         # Check for restriction note
-        self.assertIn("OpenRouter models restricted by", result)
+        self.assertIn("OpenRouter restricted to OPENROUTER_ALLOWED_MODELS", result)
 
     @patch.dict(os.environ, {"OPENROUTER_API_KEY": "test-key", "GEMINI_API_KEY": "gemini-test-key"}, clear=True)
     @patch("providers.registries.openrouter.OpenRouterModelRegistry")

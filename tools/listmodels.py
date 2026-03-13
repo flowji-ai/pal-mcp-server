@@ -150,14 +150,42 @@ class ListModelsTool(BaseTool):
             provider = ModelProviderRegistry.get_provider(provider_type)
             is_configured = provider is not None
 
-            output_lines.append(f"## {info['name']} {'✅' if is_configured else '❌'}")
+            has_restrictions = bool(
+                is_configured and restriction_service and restriction_service.has_restrictions(provider_type)
+            )
+            is_fully_blocked = False
+            restricted_names_set: set[str] = set()
 
-            if is_configured:
+            if has_restrictions:
+                # Re-filter restricted_models_by_provider through the restriction service
+                # to guard against upstream bugs that may pass unfiltered models through.
+                raw_names = restricted_models_by_provider.get(provider_type, [])
+                restricted_names_set = {
+                    name
+                    for name in raw_names
+                    if restriction_service.is_allowed(provider_type, name)
+                }
+
+                # Detect a full block: restriction exists but zero models pass
+                is_fully_blocked = len(restricted_names_set) == 0
+
+            if is_configured and has_restrictions and is_fully_blocked:
+                output_lines.append(f"## {info['name']} 🚫")
+                output_lines.append("**Status**: Blocked by restriction policy")
+                allowed_set = restriction_service.get_allowed_models(provider_type) or set()
+                output_lines.append(f"*Restriction value*: `{', '.join(sorted(allowed_set))}`")
+                # Hint about custom models for Google
+                custom_url = get_env("CUSTOM_API_URL")
+                if custom_url and provider_type == ProviderType.GOOGLE:
+                    output_lines.append(
+                        "*Use custom models instead: `g25-pro` (Gemini 2.5 Pro) or `gemini-flash` (Gemini 2.5 Flash)*"
+                    )
+            elif is_configured:
+                output_lines.append(f"## {info['name']} ✅")
                 output_lines.append("**Status**: Configured and available")
-                has_restrictions = bool(restriction_service and restriction_service.has_restrictions(provider_type))
 
                 if has_restrictions:
-                    restricted_names = sorted(set(restricted_models_by_provider.get(provider_type, [])))
+                    restricted_names = sorted(restricted_names_set)
 
                     if restricted_names:
                         output_lines.append("\n**Models (policy restricted)**:")
@@ -204,6 +232,7 @@ class ListModelsTool(BaseTool):
                         output_lines.append("\n**Aliases**:")
                         output_lines.extend(sorted(aliases))
             else:
+                output_lines.append(f"## {info['name']} ❌")
                 output_lines.append(f"**Status**: Not configured (set {info['env_key']})")
 
             output_lines.append("")
@@ -237,15 +266,25 @@ class ListModelsTool(BaseTool):
                     )
 
                     if has_restrictions:
-                        restricted_names = sorted(set(restricted_models_by_provider.get(ProviderType.OPENROUTER, [])))
+                        allowed_set = restriction_service.get_allowed_models(ProviderType.OPENROUTER) or set()
+
+                        # Build display list from allowed models only.
+                        # Use the allowed set directly instead of restricted_models_by_provider
+                        # which may contain unfiltered models due to upstream resolution bugs.
+                        restricted_names = []
+                        for model_name in sorted(allowed_set):
+                            try:
+                                caps = provider.get_capabilities(model_name)
+                                restricted_names.append((model_name, caps))
+                            except (ValueError, AttributeError):
+                                # Model not in registry — still show it as allowed but unrecognized
+                                restricted_names.append((model_name, None))
 
                         output_lines.append("\n**Models (policy restricted)**:")
                         if restricted_names:
-                            for model_name in restricted_names:
-                                try:
-                                    caps = provider.get_capabilities(model_name)
-                                except ValueError:
-                                    output_lines.append(f"- `{model_name}` *(not recognized by provider)*")
+                            for model_name, caps in restricted_names:
+                                if caps is None:
+                                    output_lines.append(f"- `{model_name}` *(allowed but not in local registry)*")
                                     continue
 
                                 context_value = int(caps.context_window or 0)
@@ -262,10 +301,9 @@ class ListModelsTool(BaseTool):
                                 score = caps.get_effective_capability_rank()
                                 output_lines.append(f"- `{model_name}`{arrow} (score {score}, {suffix})")
 
-                            allowed_set = restriction_service.get_allowed_models(ProviderType.OPENROUTER) or set()
                             if allowed_set:
                                 output_lines.append(
-                                    f"\n*OpenRouter models restricted by OPENROUTER_ALLOWED_MODELS: {', '.join(sorted(allowed_set))}*"
+                                    f"\n*OpenRouter restricted to OPENROUTER_ALLOWED_MODELS: {', '.join(sorted(allowed_set))}*"
                                 )
                         else:
                             output_lines.append("- *No models allowed by current restriction policy.*")
