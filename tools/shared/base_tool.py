@@ -689,7 +689,12 @@ class BaseTool(ABC):
 
                 for path in paths_to_check:
                     if path and not os.path.isabs(path):
-                        return f"All file paths must be FULL absolute paths. Invalid path: '{path}'"
+                        return (
+                            f"All file paths must be FULL absolute paths to real files / folders - DO NOT SHORTEN. "
+                            f"Received: {path}\n"
+                            f"FIX: Use the complete path starting from / (e.g. /Users/...). "
+                            f"Find the absolute path with your file tools before passing it here."
+                        )
 
         return None
 
