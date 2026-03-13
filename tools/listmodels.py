@@ -165,6 +165,10 @@ class ListModelsTool(BaseTool):
                             output_lines.extend(format_model_entry(provider, model_name))
                     else:
                         output_lines.append("\n*No models are currently allowed by restriction policy.*")
+                        # Check if custom models cover this provider and point agents there
+                        custom_url = get_env("CUSTOM_API_URL")
+                        if custom_url and provider_type == ProviderType.GOOGLE:
+                            output_lines.append("*Use custom models instead: `g25-pro` (Gemini 2.5 Pro) or `gemini-flash` (Gemini 2.5 Flash)*")
                 else:
                     output_lines.append("\n**Models**:")
 
@@ -378,10 +382,11 @@ class ListModelsTool(BaseTool):
 
         # Add usage tips
         output_lines.append("\n**Usage Tips**:")
-        output_lines.append("- Use model aliases (e.g., 'flash', 'gpt5', 'opus') for convenience")
+        output_lines.append("- Use model aliases (e.g., 'flash', 'g25-pro', 'qwen-coder') for convenience")
         output_lines.append("- In auto mode, the CLI Agent will select the best model for each task")
         output_lines.append("- Custom models are only available when CUSTOM_API_URL is set")
         output_lines.append("- OpenRouter provides access to many cloud models with one API key")
+        output_lines.append("- **IMPORTANT**: If a native provider shows 'no models allowed', use the equivalent custom model instead")
 
         # Format output
         content = "\n".join(output_lines)
