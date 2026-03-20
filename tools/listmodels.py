@@ -153,7 +153,6 @@ class ListModelsTool(BaseTool):
             has_restrictions = bool(
                 is_configured and restriction_service and restriction_service.has_restrictions(provider_type)
             )
-            is_fully_blocked = False
             restricted_names_set: set[str] = set()
 
             if has_restrictions:
@@ -166,19 +165,20 @@ class ListModelsTool(BaseTool):
                     if restriction_service.is_allowed(provider_type, name)
                 }
 
-                # Detect a full block: restriction exists but zero models pass
-                is_fully_blocked = len(restricted_names_set) == 0
+            # Determine if all models are blocked (restriction exists but zero pass)
+            effectively_blocked = has_restrictions and len(restricted_names_set) == 0
 
-            if is_configured and has_restrictions and is_fully_blocked:
+            if is_configured and effectively_blocked:
                 output_lines.append(f"## {info['name']} 🚫")
-                output_lines.append("**Status**: Blocked by restriction policy")
+                output_lines.append("**Status**: Native provider intentionally blocked by restriction policy")
                 allowed_set = restriction_service.get_allowed_models(provider_type) or set()
                 output_lines.append(f"*Restriction value*: `{', '.join(sorted(allowed_set))}`")
-                # Hint about custom models for Google
+                # Point agents to Custom/Local provider for Google
                 custom_url = get_env("CUSTOM_API_URL")
                 if custom_url and provider_type == ProviderType.GOOGLE:
                     output_lines.append(
-                        "*Use custom models instead: `g25-pro` (Gemini 2.5 Pro) or `gemini-flash` (Gemini 2.5 Flash)*"
+                        "\n**Gemini access is routed through the Custom/Local provider below.**"
+                        " Use `g25-pro` (Gemini 2.5 Pro) or `gemini-flash` (Gemini 2.5 Flash)."
                     )
             elif is_configured:
                 output_lines.append(f"## {info['name']} ✅")
@@ -191,12 +191,6 @@ class ListModelsTool(BaseTool):
                         output_lines.append("\n**Models (policy restricted)**:")
                         for model_name in restricted_names:
                             output_lines.extend(format_model_entry(provider, model_name))
-                    else:
-                        output_lines.append("\n*No models are currently allowed by restriction policy.*")
-                        # Check if custom models cover this provider and point agents there
-                        custom_url = get_env("CUSTOM_API_URL")
-                        if custom_url and provider_type == ProviderType.GOOGLE:
-                            output_lines.append("*Use custom models instead: `g25-pro` (Gemini 2.5 Pro) or `gemini-flash` (Gemini 2.5 Flash)*")
                 else:
                     output_lines.append("\n**Models**:")
 

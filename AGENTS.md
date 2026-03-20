@@ -4,6 +4,12 @@ See `requirements.txt` and `requirements-dev.txt`
 
 Also read CLAUDE.md and CLAUDE.local.md if available.
 
+## Deployment Context
+
+This server is run from a local fork, not upstream. The `pal-delegation` skill (deployed to `~/.claude/skills/pal-delegation/`) documents the full routing architecture, provider config, custom model aliases, and troubleshooting. Read that skill before making changes to providers, model resolution, or `listmodels` output — it explains why native providers are intentionally blocked and how requests route through CLIProxyAPI to upstream providers.
+
+The `custom_models.json` file that defines model aliases is managed externally (not in this repo). Its path is set via `CUSTOM_MODELS_CONFIG_PATH` in the MCP server env config.
+
 ## Project Structure & Module Organization
 PAL MCP Server centers on `server.py`, which exposes MCP entrypoints and coordinates multi-model workflows. 
 Feature-specific tools live in `tools/`, provider integrations in `providers/`, and shared helpers in `utils/`. 
