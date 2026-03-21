@@ -10,6 +10,8 @@ This server is run from a local fork, not upstream. The `pal-delegation` skill (
 
 The `custom_models.json` file that defines model aliases is managed externally (not in this repo). Its path is set via `CUSTOM_MODELS_CONFIG_PATH` in the MCP server env config.
 
+**When making major changes** (providers, model resolution, `listmodels` output, routing logic), update the `pal-delegation` skill to match. The skill source is in `agent-deck/canonical/skills/pal-delegation/`.
+
 ## Project Structure & Module Organization
 PAL MCP Server centers on `server.py`, which exposes MCP entrypoints and coordinates multi-model workflows. 
 Feature-specific tools live in `tools/`, provider integrations in `providers/`, and shared helpers in `utils/`. 
