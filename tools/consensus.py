@@ -52,9 +52,9 @@ CONSENSUS_WORKFLOW_FIELD_DESCRIPTIONS = {
         "User-specified list of models to consult (provide at least two entries). "
         "Each entry may include model, stance (for/against/neutral), and stance_prompt. "
         "Each (model, stance) pair must be unique. "
-        "Default panel if no specific models requested: g25-pro (strongest reasoning) + qwen3-coder-plus (strong coder). "
-        "For 3-model consensus: g25-pro, qwen3-coder-plus, groq-qwen. "
-        "Example: [{'model':'g25-pro','stance':'against'}, {'model':'qwen3-coder-plus','stance':'neutral'}]."
+        "Default panel: 2x g25-pro (strongest reasoning, different stances) + 1x host sub-agent (the calling agent's own perspective). "
+        "Fallback panel (if Gemini unavailable): qwen3-coder-plus, groq-qwen, groq-llama. "
+        "Example: [{'model':'g25-pro','stance':'against'}, {'model':'g25-pro','stance':'neutral'}]."
     ),
     "current_model_index": "0-based index of the next model to consult (managed internally).",
     "model_responses": "Internal log of responses gathered so far.",
