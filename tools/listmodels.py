@@ -168,19 +168,11 @@ class ListModelsTool(BaseTool):
             # Determine if all models are blocked (restriction exists but zero pass)
             effectively_blocked = has_restrictions and len(restricted_names_set) == 0
 
-            if is_configured and effectively_blocked:
-                output_lines.append(f"## {info['name']} 🚫")
-                output_lines.append("**Status**: Native provider intentionally blocked by restriction policy")
-                allowed_set = restriction_service.get_allowed_models(provider_type) or set()
-                output_lines.append(f"*Restriction value*: `{', '.join(sorted(allowed_set))}`")
-                # Point agents to Custom/Local provider for Google
-                custom_url = get_env("CUSTOM_API_URL")
-                if custom_url and provider_type == ProviderType.GOOGLE:
-                    output_lines.append(
-                        "\n**Gemini access is routed through the Custom/Local provider below.**"
-                        " Use `g25-pro` (Gemini 2.5 Pro) or `gemini-flash` (Gemini 2.5 Flash)."
-                    )
-            elif is_configured:
+            # Skip providers that are fully blocked — no point showing unavailable models
+            if not is_configured or effectively_blocked:
+                continue
+
+            if is_configured:
                 output_lines.append(f"## {info['name']} ✅")
                 output_lines.append("**Status**: Configured and available")
 
@@ -225,19 +217,16 @@ class ListModelsTool(BaseTool):
                     if aliases:
                         output_lines.append("\n**Aliases**:")
                         output_lines.extend(sorted(aliases))
-            else:
-                output_lines.append(f"## {info['name']} ❌")
-                output_lines.append(f"**Status**: Not configured (set {info['env_key']})")
-
             output_lines.append("")
 
         # Check OpenRouter
         openrouter_key = get_env("OPENROUTER_API_KEY")
         is_openrouter_configured = openrouter_key and openrouter_key != "your_openrouter_api_key_here"
 
-        output_lines.append(f"## OpenRouter {'✅' if is_openrouter_configured else '❌'}")
-
-        if is_openrouter_configured:
+        if not is_openrouter_configured:
+            pass  # Skip unconfigured providers
+        else:
+            output_lines.append("## OpenRouter ✅")
             output_lines.append("**Status**: Configured and available")
             output_lines.append("**Description**: Access to multiple cloud AI providers via unified API")
 
@@ -342,21 +331,15 @@ class ListModelsTool(BaseTool):
             except Exception as e:
                 logger.exception("Error listing OpenRouter models: %s", e)
                 output_lines.append(f"**Error loading models**: {str(e)}")
-        else:
-            output_lines.append("**Status**: Not configured (set OPENROUTER_API_KEY)")
-            output_lines.append("**Note**: Provides access to GPT-5, O3, Mistral, and many more")
-
         output_lines.append("")
 
         # Check Custom API
         custom_url = get_env("CUSTOM_API_URL")
 
-        output_lines.append(f"## Custom/Local API {'✅' if custom_url else '❌'}")
-
         if custom_url:
+            output_lines.append("## Custom/Local API ✅")
             output_lines.append("**Status**: Configured and available")
             output_lines.append(f"**Endpoint**: {custom_url}")
-            output_lines.append("**Description**: Local models via Ollama, vLLM, LM Studio, etc.")
 
             try:
                 registry = CustomEndpointModelRegistry()
@@ -377,10 +360,6 @@ class ListModelsTool(BaseTool):
 
             except Exception as e:
                 output_lines.append(f"**Error loading custom models**: {str(e)}")
-        else:
-            output_lines.append("**Status**: Not configured (set CUSTOM_API_URL)")
-            output_lines.append("**Example**: CUSTOM_API_URL=http://localhost:11434 (for Ollama)")
-
         output_lines.append("")
 
         # Add summary
@@ -412,13 +391,8 @@ class ListModelsTool(BaseTool):
         except Exception as e:
             logger.warning(f"Error getting total available models: {e}")
 
-        # Add usage tips
-        output_lines.append("\n**Usage Tips**:")
-        output_lines.append("- Use model aliases (e.g., 'flash', 'g25-pro', 'qwen-coder') for convenience")
-        output_lines.append("- In auto mode, the CLI Agent will select the best model for each task")
-        output_lines.append("- Custom models are only available when CUSTOM_API_URL is set")
-        output_lines.append("- OpenRouter provides access to many cloud models with one API key")
-        output_lines.append("- **IMPORTANT**: If a native provider shows 'no models allowed', use the equivalent custom model instead")
+        # Add usage tip
+        output_lines.append("\n**Default model: `g25-pro`** — use this when unsure which model to pick.")
 
         # Format output
         content = "\n".join(output_lines)
