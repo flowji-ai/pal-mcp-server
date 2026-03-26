@@ -1,0 +1,20 @@
+#!/bin/sh
+# Git post-commit hook to generate commit summaries
+
+# Get the repository root directory
+REPO_ROOT=$(git rev-parse --show-toplevel)
+HELPER_SCRIPT="$REPO_ROOT/.flowji-ai/tools/git-commit-summaries/post_commit_summary.py"
+
+# Support Husky environments if present
+HUSKY_SH="$(dirname "$0")/_/husky.sh"
+if [ -f "$HUSKY_SH" ]; then
+    . "$HUSKY_SH"
+fi
+
+# Execute the Python helper script
+if [ -f "$HELPER_SCRIPT" ]; then
+    python3 "$HELPER_SCRIPT"
+else
+    echo "[post-commit-summary] Error: Helper script not found at $HELPER_SCRIPT" >&2
+    exit 1
+fi

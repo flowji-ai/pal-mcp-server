@@ -1,0 +1,77 @@
+#!/bin/bash
+# Pre-push hook to enforce Article III (Test-First Imperative) from constitution
+#
+# Installation:
+#   cp .spectri/templates/spectri-spectri/pre-push.hook .git/hooks/pre-push
+#   chmod +x .git/hooks/pre-push
+#
+# Purpose:
+#   1. Enforce Article III (Test-First Imperative) by running tests before push
+#   2. Catch regressions before they reach the remote repository
+#   3. Support bypass mechanisms for emergency pushes
+#
+# Rationale:
+#   - Article III states: "No code before failing tests exist" (NON-NEGOTIABLE)
+#   - Pre-push is the last chance to catch issues before sharing code
+#   - Running tests here doesn't slow down local commits
+#   - Prevents broken code from reaching teammates or CI/CD
+#
+# Features:
+#   - Runs full test suite using pytest
+#   - Bypass mechanism: SKIP_TEST_CHECK=1 environment variable
+#   - Informative output on test failures
+#   - Graceful handling when tests don't exist
+
+set -euo pipefail
+
+# Bypass mechanism
+if [ "${SKIP_TEST_CHECK:-}" = "1" ]; then
+    echo "⚠️  Test check bypassed (SKIP_TEST_CHECK=1)" >&2
+    exit 0
+fi
+
+# Check if pytest is available
+if ! command -v pytest &> /dev/null; then
+    echo "⚠️  pytest not found - skipping test enforcement" >&2
+    echo "   Install pytest to enable test enforcement" >&2
+    exit 0
+fi
+
+# Check if tests directory exists
+if [ ! -d "tests" ]; then
+    echo "⚠️  No tests directory found - skipping test enforcement" >&2
+    exit 0
+fi
+
+echo "" >&2
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+echo "🧪 Running test suite (Article III: Test-First Imperative)" >&2
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+echo "" >&2
+
+# Run pytest with concise output
+if pytest -q --tb=short; then
+    echo "" >&2
+    echo "✅ All tests passed - push allowed" >&2
+    echo "" >&2
+    exit 0
+else
+    TEST_EXIT_CODE=$?
+    echo "" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo "❌ PUSH BLOCKED: Tests failed" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo "" >&2
+    echo "Article III (Test-First Imperative) requires passing tests." >&2
+    echo "" >&2
+    echo "To fix this issue:" >&2
+    echo "  1. Review the test failures above" >&2
+    echo "  2. Fix the failing tests or code" >&2
+    echo "  3. Run 'pytest' locally to verify" >&2
+    echo "  4. Try pushing again" >&2
+    echo "" >&2
+    echo "Emergency bypass (use with caution):" >&2
+    echo "  SKIP_TEST_CHECK=1 git push" >&2
+    echo "" >&2
+    exit 1
+fi

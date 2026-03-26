@@ -1,0 +1,108 @@
+{
+  "_comment": "Spectri Hooks Manifest - Source of truth for hook definitions deployed to agent settings",
+  "_schema_docs": {
+    "_note": "This schema documents all fields. Run 'jq ._schema_docs' to view without data.",
+    "schema_version": "Manifest schema version for compatibility checking (semver format)",
+    "hooks": "Array of hook definitions to deploy into agent settings files",
+    "hooks[].id": "Unique identifier (kebab-case) for the hook definition",
+    "hooks[].description": "Brief description of what this hook does",
+    "hooks[].event": "Claude Code hook event: PreToolUse | PostToolUse | SessionStart | SubagentStart | PostCompact | UserPromptSubmit",
+    "hooks[].matcher": "Tool matcher for PreToolUse/PostToolUse events (null for session/prompt events)",
+    "hooks[].command": "Shell command to execute (must reference .spectri/scripts/hooks/)",
+    "hooks[].timeout": "Timeout in seconds for the hook command",
+    "hooks[].agents": "Array of agent IDs this hook applies to (e.g. ['claude'])"
+  },
+  "schema_version": "1.0.0",
+  "hooks": [
+    {
+      "id": "artifact-write-guard-write",
+      "description": "Prevents direct writes to deployed Spectri artifacts",
+      "event": "PreToolUse",
+      "matcher": "Write",
+      "command": "bash .spectri/scripts/hooks/artifact-write-guard.sh",
+      "timeout": 10,
+      "agents": ["claude"]
+    },
+    {
+      "id": "spec-folder-edit-guard-write",
+      "description": "Guards spec folder structure on Write operations",
+      "event": "PreToolUse",
+      "matcher": "Write",
+      "command": "bash .spectri/scripts/hooks/spec-folder-edit-guard.sh",
+      "timeout": 10,
+      "agents": ["claude"]
+    },
+    {
+      "id": "artifact-write-guard-edit",
+      "description": "Prevents direct edits to deployed Spectri artifacts",
+      "event": "PreToolUse",
+      "matcher": "Edit",
+      "command": "bash .spectri/scripts/hooks/artifact-write-guard.sh",
+      "timeout": 10,
+      "agents": ["claude"]
+    },
+    {
+      "id": "spec-folder-edit-guard-edit",
+      "description": "Guards spec folder structure on Edit operations",
+      "event": "PreToolUse",
+      "matcher": "Edit",
+      "command": "bash .spectri/scripts/hooks/spec-folder-edit-guard.sh",
+      "timeout": 10,
+      "agents": ["claude"]
+    },
+    {
+      "id": "spec-folder-watchdog-write",
+      "description": "Monitors spec folder changes after Write operations",
+      "event": "PostToolUse",
+      "matcher": "Write",
+      "command": "bash .spectri/scripts/hooks/spec-folder-watchdog.sh",
+      "timeout": 10,
+      "agents": ["claude"]
+    },
+    {
+      "id": "spec-folder-watchdog-edit",
+      "description": "Monitors spec folder changes after Edit operations",
+      "event": "PostToolUse",
+      "matcher": "Edit",
+      "command": "bash .spectri/scripts/hooks/spec-folder-watchdog.sh",
+      "timeout": 10,
+      "agents": ["claude"]
+    },
+    {
+      "id": "inject-session-start",
+      "description": "Injects using-spectri skill content at session start",
+      "event": "SessionStart",
+      "matcher": null,
+      "command": "bash .spectri/scripts/hooks/inject-session-start.sh",
+      "timeout": 10,
+      "agents": ["claude"]
+    },
+    {
+      "id": "inject-subagent-start",
+      "description": "Injects using-spectri skill content at subagent start",
+      "event": "SubagentStart",
+      "matcher": null,
+      "command": "bash .spectri/scripts/hooks/inject-session-start.sh",
+      "timeout": 10,
+      "agents": ["claude"]
+    },
+    {
+      "id": "inject-post-compact",
+      "description": "Re-injects using-spectri skill content after context compaction",
+      "event": "PostCompact",
+      "matcher": null,
+      "command": "bash .spectri/scripts/hooks/inject-session-start.sh",
+      "timeout": 10,
+      "agents": ["claude"]
+    },
+    {
+      "id": "inject-user-prompt",
+      "description": "Injects skill-check reinforcement on every user prompt",
+      "event": "UserPromptSubmit",
+      "matcher": null,
+      "command": "bash .spectri/scripts/hooks/inject-user-prompt.sh",
+      "timeout": 10,
+      "agents": ["claude"]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+#!/bin/sh
+# Pre-populate commit messages with Flowji AI template when no message provided.
+
+COMMIT_MSG_FILE="$1"
+
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+if [ -z "$REPO_ROOT" ]; then
+  exit 0
+fi
+
+TEMPLATE_PATH="$REPO_ROOT/.flowji-ai/tools/git-commit-summaries/templates/commit-template.md"
+
+if [ ! -f "$TEMPLATE_PATH" ]; then
+  exit 0
+fi
+
+if [ -s "$COMMIT_MSG_FILE" ]; then
+  exit 0
+fi
+
+cp "$TEMPLATE_PATH" "$COMMIT_MSG_FILE"

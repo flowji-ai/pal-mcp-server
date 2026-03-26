@@ -1,3 +1,7 @@
+<!-- SPECTRI:START -->
+@./SPECTRI.md
+<!-- SPECTRI:END -->
+
 # Repository Guidelines
 
 See `requirements.txt` and `requirements-dev.txt`

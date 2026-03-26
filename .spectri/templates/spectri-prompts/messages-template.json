@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Template for agent handoff prompt conversations. Copy to spectri/coordination/prompts/YYYY-MM-DD-topic/messages.json",
+  "id": "YYYY-MM-DD-topic-slug",
+  "title": "Brief descriptive title",
+  "created_at": "YYYY-MM-DDTHH:MM:SSZ",
+  "updated_at": "YYYY-MM-DDTHH:MM:SSZ",
+  "status": "awaiting-response",
+  "creator": "Agent Session ID (e.g., Claude Vermilion Pangolin 2110)",
+  "implementer": null,
+  "messages": [
+    {
+      "id": 1,
+      "type": "prompt",
+      "from": "Agent Session ID",
+      "content": "Task description with context and expectations",
+      "timestamp": "YYYY-MM-DDTHH:MM:SSZ"
+    }
+  ]
+}

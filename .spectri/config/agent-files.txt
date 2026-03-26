@@ -1,0 +1,35 @@
+# Agent Documentation File Patterns
+# =================================
+#
+# This file defines which files are considered "agent documentation"
+# for the pre-commit hook validation.
+#
+# Format:
+#   - One pattern per line
+#   - Lines starting with # are comments
+#   - Empty lines are ignored
+#   - Patterns match filenames (not full paths)
+#   - Supports shell glob patterns (*, ?)
+#
+# Configuration thresholds (set via environment variables):
+#   AGENT_DOCS_GROWTH_THRESHOLD=30    # Lines growth that blocks commit
+#   AGENT_DOCS_SIZE_THRESHOLD=200     # Lines that trigger warning
+#   AGENT_DOCS_DIFF_PREVIEW_LINES=10  # Lines to show in diff preview
+#
+# Examples:
+#   AGENTS.md        - Exact match for any AGENTS.md file
+#   *.md             - All markdown files (not recommended)
+#   CLAUDE*.md       - Files starting with CLAUDE
+#
+# Reference: Spec 038 - AGENTS.md Enforcement
+# See: spectri/specs/038-agents-md-enforcement/spec.md
+
+# Primary agent documentation files
+AGENTS.md
+CLAUDE.md
+QWEN.md
+GEMINI.md
+
+# Agent-specific config files (uncomment if needed)
+# claude.toml
+# .claude/settings.json

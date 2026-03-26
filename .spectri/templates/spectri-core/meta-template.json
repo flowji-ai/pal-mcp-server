@@ -1,0 +1,34 @@
+{
+  "status": "draft",
+  "created": "{{ISO_TIMESTAMP}}",
+  "created_by": "[AGENT_SESSION_ID]",
+  "documents": {
+    "spec.md": {
+      "status": "planned",
+      "created": null,
+      "created_by": null,
+      "last_updated": null,
+      "updated_by": null
+    },
+    "plan.md": {
+      "status": "planned",
+      "created": null,
+      "created_by": null,
+      "last_updated": null,
+      "updated_by": null
+    },
+    "tasks.md": {
+      "status": "planned",
+      "created": null,
+      "created_by": null,
+      "last_updated": null,
+      "updated_by": null
+    }
+  },
+  "implementation_summaries": [],
+  "related_specs": [],
+  "related_repos": [],
+  "related_files": [],
+  "blockers": [],
+  "notes": ""
+}

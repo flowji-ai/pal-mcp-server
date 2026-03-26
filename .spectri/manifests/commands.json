@@ -1,0 +1,694 @@
+{
+  "_comment": "Spectri Commands Manifest - Source of truth for command composition",
+  "_schema_docs": {
+    "_note": "This schema documents all fields. Run 'jq ._schema_docs' to view without data.",
+    "schema_version": "Manifest schema version for compatibility checking (semver format)",
+    "injections": "Array of reusable injection component definitions",
+    "injections[].id": "Unique identifier (kebab-case) used in command.injections[].injection_id references",
+    "injections[].name": "Human-readable display name for documentation",
+    "injections[].description": "Brief description of what this injection provides",
+    "injections[].insertion_point": "Marker name to match: post-frontmatter | post-header | post-execution",
+    "injections[].content_file": "Path to content.md relative to src/injections/",
+    "injections[].supports_params": "Boolean (default false) - if true, content.md may use {{PARAM}} placeholders",
+    "commands": "Array of command composition definitions",
+    "commands[].id": "Command identifier matching output filename (e.g., 'spec.specify' \u2192 spec.specify.md)",
+    "commands[].name": "Human-readable command name for documentation",
+    "commands[].family": "Source folder: workflow-commands | spec-modification | quality-assurance | system-utilities | documentation",
+    "commands[].category": "Output subfolder for sync: spectri-core | spectri-modify | spectri-quality | spectri-trail | spectri-specflow",
+    "commands[].origin.source": "Origin type: github-spec-kit | spec-kit-plus | spectri",
+    "commands[].origin.upstream_url": "URL to upstream source file (required for github-spec-kit/spec-kit-plus, null for spectri)",
+    "commands[].origin.adaptations": "Notes on what was changed from upstream (null if no changes)",
+    "commands[].base_template": "Filename of base template in src/command-bases/spectri-{family}/ (e.g., 'specify.md')",
+    "commands[].model": "AI model to use: opus | sonnet | haiku (sets frontmatter model field)",
+    "commands[].description": "Brief description shown in command help and frontmatter",
+    "commands[].injections": "Array of injection references applied in order (first = closest to marker)",
+    "commands[].injections[].injection_id": "References injections[].id - must exist in injections array",
+    "commands[].injections[].params": "Object of key:value params - keys lowercase, replaced as {{UPPERCASE}} in content",
+    "_build_notes": {
+      "marker_format": "Base templates use <!-- INJECT: insertion_point --> markers",
+      "multi_injection": "Multiple injections with same insertion_point stack in array order",
+      "param_replacement": "Params replace {{UPPERCASE}} placeholders in injection content.md",
+      "frontmatter_generation": "Build script generates YAML frontmatter from command metadata"
+    }
+  },
+  "schema_version": "1.1.0",
+  "injections": [
+    {
+      "id": "user-input",
+      "name": "User Input Block",
+      "description": "Universal user input block displayed at top of command",
+      "insertion_point": "post-frontmatter",
+      "content_file": "user-input/content.md"
+    },
+    {
+      "id": "frontmatter-update",
+      "name": "Frontmatter Update Reminder",
+      "description": "Post-header frontmatter update instructions for documents",
+      "insertion_point": "post-header",
+      "content_file": "frontmatter-update/content.md"
+    },
+    {
+      "id": "summary-creation",
+      "name": "Implementation Summary Checkpoint",
+      "description": "Post-execution reminder to create implementation summary",
+      "insertion_point": "post-execution",
+      "content_file": "summary-creation/content.md",
+      "supports_params": true
+    },
+    {
+      "id": "meta-update",
+      "name": "Meta.json Update",
+      "description": "Update meta.json after document creation",
+      "insertion_point": "post-execution",
+      "content_file": "meta-update/content.md",
+      "supports_params": true
+    },
+    {
+      "id": "finalization-verification",
+      "name": "Finalization Verification Checklist",
+      "description": "End-of-command checklist for housekeeping verification",
+      "insertion_point": "post-finalization",
+      "content_file": "finalization-verification/content.md"
+    }
+  ],
+  "commands": [
+    {
+      "id": "spec.specify",
+      "name": "Create Feature Specification",
+      "family": "spectri-core",
+      "category": "spectri-core",
+      "origin": {
+        "source": "github-spec-kit",
+        "upstream_url": "https://github.com/github/spec-kit/blob/main/templates/commands/specify.md",
+        "adaptations": "Renamed speckit\u2192spectri, added branchless mode support, added checkpoint automation"
+      },
+      "base_template": "specify.md",
+      "model": "opus",
+      "description": "Create or update the feature specification from a natural language feature description.",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "frontmatter-update"
+        },
+        {
+          "injection_id": "summary-creation",
+          "params": {
+            "scope": "spec.md"
+          }
+        },
+        {
+          "injection_id": "meta-update",
+          "params": {
+            "doc": "spec.md"
+          }
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spec.plan",
+      "name": "Create Implementation Plan",
+      "family": "spectri-core",
+      "category": "spectri-core",
+      "origin": {
+        "source": "github-spec-kit",
+        "upstream_url": "https://github.com/github/spec-kit/blob/main/templates/commands/plan.md",
+        "adaptations": "Renamed speckit\u2192spectri, added branchless mode support, added checkpoint automation"
+      },
+      "base_template": "plan.md",
+      "model": "opus",
+      "description": "Execute the implementation planning workflow using the plan template to generate design artifacts.",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "frontmatter-update"
+        },
+        {
+          "injection_id": "summary-creation",
+          "params": {
+            "scope": "plan.md"
+          }
+        },
+        {
+          "injection_id": "meta-update",
+          "params": {
+            "doc": "plan.md"
+          }
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spec.tasks",
+      "name": "Generate Task List",
+      "family": "spectri-core",
+      "category": "spectri-core",
+      "origin": {
+        "source": "github-spec-kit",
+        "upstream_url": "https://github.com/github/spec-kit/blob/main/templates/commands/tasks.md",
+        "adaptations": "Renamed speckit\u2192spectri, added checkpoint automation, simplified summary creation"
+      },
+      "base_template": "tasks.md",
+      "model": "sonnet",
+      "description": "Generate an actionable, dependency-ordered tasks.md for the feature based on available design artifacts.",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "frontmatter-update"
+        },
+        {
+          "injection_id": "summary-creation",
+          "params": {
+            "scope": "tasks.md"
+          }
+        },
+        {
+          "injection_id": "meta-update",
+          "params": {
+            "doc": "tasks.md"
+          }
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spec.implement",
+      "name": "Execute Implementation Plan",
+      "family": "spectri-core",
+      "category": "spectri-core",
+      "origin": {
+        "source": "github-spec-kit",
+        "upstream_url": "https://github.com/github/spec-kit/blob/main/templates/commands/implement.md",
+        "adaptations": "Renamed speckit\u2192spectri, merged implement-phase functionality, simplified checkpoint"
+      },
+      "base_template": "implement.md",
+      "model": "sonnet",
+      "description": "Execute the implementation plan by processing and executing all tasks defined in tasks.md",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "frontmatter-update"
+        },
+        {
+          "injection_id": "summary-creation",
+          "params": {
+            "scope": "implementation"
+          }
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spec.revise-spec",
+      "name": "Revise Specification",
+      "family": "spectri-modify",
+      "category": "spectri-modify",
+      "origin": {
+        "source": "spectri",
+        "adaptations": null
+      },
+      "base_template": "revise-spec.md",
+      "model": "sonnet",
+      "description": "Iteratively refine user stories, FRs, or acceptance criteria in an existing spec.md with automatic frontmatter updates and implementation summary creation.",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "frontmatter-update"
+        },
+        {
+          "injection_id": "summary-creation",
+          "params": {
+            "scope": "spec extension"
+          }
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spec.revise-plan",
+      "name": "Revise Implementation Plan",
+      "family": "spectri-modify",
+      "category": "spectri-modify",
+      "origin": {
+        "source": "spectri",
+        "adaptations": null
+      },
+      "base_template": "revise-plan.md",
+      "model": "sonnet",
+      "description": "Iteratively refine the implementation approach in an existing plan.md to reflect changes in spec.md with automatic frontmatter updates, soft validation, and implementation summary creation.",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "frontmatter-update"
+        },
+        {
+          "injection_id": "summary-creation",
+          "params": {
+            "scope": "plan update"
+          }
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spec.extend-tasks",
+      "name": "Extend Task List",
+      "family": "spectri-modify",
+      "category": "spectri-modify",
+      "origin": {
+        "source": "spectri",
+        "adaptations": null
+      },
+      "base_template": "extend-tasks.md",
+      "model": "sonnet",
+      "description": "Extend an existing tasks.md by adding tasks to align with changes in plan.md (preserving existing tasks) with automatic frontmatter updates, soft validation, and implementation summary creation.",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "frontmatter-update"
+        },
+        {
+          "injection_id": "summary-creation",
+          "params": {
+            "scope": "tasks revision"
+          }
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spec.cross-check-alignment",
+      "name": "Cross-Artifact Alignment Check",
+      "family": "spectri-quality",
+      "category": "spectri-quality",
+      "origin": {
+        "source": "github-spec-kit",
+        "upstream_url": "https://github.com/github/spec-kit/blob/main/templates/commands/analyze.md",
+        "adaptations": "Renamed speckit\u2192spectri, simplified checkpoint from 35 lines to 2 lines"
+      },
+      "base_template": "cross-check-alignment.md",
+      "model": "opus",
+      "description": "Perform a non-destructive cross-artifact consistency and quality analysis across spec.md, plan.md, and tasks.md after task generation.",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "frontmatter-update"
+        },
+        {
+          "injection_id": "summary-creation",
+          "params": {
+            "scope": "analysis"
+          }
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spec.health",
+      "name": "Project Health Check",
+      "family": "spectri-quality",
+      "category": "spectri-quality",
+      "origin": {
+        "source": "spectri",
+        "adaptations": null
+      },
+      "base_template": "health.md",
+      "model": "sonnet",
+      "description": "Detect structural drift in Spectri projects by verifying command sync, spec integrity, conventions, and cross-references.",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        }
+      ]
+    },
+    {
+      "id": "spec.validate",
+      "name": "Validate Spec Content",
+      "family": "spectri-quality",
+      "category": "spectri-quality",
+      "origin": {
+        "source": "spectri",
+        "spec": "spectri/specs/04-deployed/022-validate-module",
+        "adaptations": null
+      },
+      "base_template": "validate.md",
+      "model": "sonnet",
+      "description": "Validate specs for format, required sections, and consistency. Use pre-commit, in CI pipelines, or after changes to catch errors early.",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        }
+      ]
+    },
+    {
+      "id": "spec.clarify",
+      "name": "Clarify Specification",
+      "family": "spectri-quality",
+      "category": "spectri-quality",
+      "origin": {
+        "source": "github-spec-kit",
+        "upstream_url": "https://github.com/github/spec-kit/blob/main/templates/commands/clarify.md",
+        "adaptations": "Renamed speckit\u2192spectri, simplified checkpoint from 35 lines to 2 lines"
+      },
+      "base_template": "clarify.md",
+      "model": "opus",
+      "description": "Identify underspecified areas in the current feature spec by asking up to 5 highly targeted clarification questions and encoding answers back into the spec.",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "frontmatter-update"
+        },
+        {
+          "injection_id": "summary-creation",
+          "params": {
+            "scope": "clarification"
+          }
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spec.checklist",
+      "name": "Generate Requirements Quality Checklist",
+      "family": "spectri-core",
+      "category": "spectri-core",
+      "origin": {
+        "source": "github-spec-kit",
+        "upstream_url": "https://github.com/github/spec-kit/blob/main/templates/commands/checklist.md",
+        "adaptations": "Renamed speckit\u2192spectri, simplified checkpoint from 35 lines to 2 lines"
+      },
+      "base_template": "checklist.md",
+      "model": "sonnet",
+      "description": "Generate a custom checklist for the current feature based on user requirements.",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "frontmatter-update"
+        },
+        {
+          "injection_id": "summary-creation",
+          "params": {
+            "scope": "checklist"
+          }
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spec.issue",
+      "name": "Create GitHub Issue",
+      "family": "spectri-quality",
+      "category": "spectri-quality",
+      "origin": {
+        "source": "spectri",
+        "adaptations": null
+      },
+      "base_template": "issue.md",
+      "model": "sonnet",
+      "description": "Create GitHub issue from rapid capture (verbal/screenshot) or structured input",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        }
+      ]
+    },
+    {
+      "id": "spec.taskstoissues",
+      "name": "Convert Tasks to GitHub Issues",
+      "family": "spectri-quality",
+      "category": "spectri-quality",
+      "origin": {
+        "source": "spectri",
+        "adaptations": null
+      },
+      "base_template": "taskstoissues.md",
+      "model": "sonnet",
+      "description": "Convert existing tasks into actionable, dependency-ordered GitHub issues for the feature based on available design artifacts.",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "frontmatter-update"
+        },
+        {
+          "injection_id": "summary-creation",
+          "params": {
+            "scope": "GitHub issues"
+          }
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spec.adr",
+      "name": "Create Architecture Decision Record",
+      "family": "spectri-trail",
+      "category": "spectri-trail",
+      "origin": {
+        "source": "spectri",
+        "adaptations": null
+      },
+      "base_template": "adr.md",
+      "model": "opus",
+      "description": "Create Architecture Decision Record (ADR) to document significant architectural decisions",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spec.spec-agentsmd",
+      "name": "Create Spec-Level AGENTS.md",
+      "family": "spectri-trail",
+      "category": "spectri-trail",
+      "origin": {
+        "source": "spectri",
+        "spec": "spectri/specs/04-deployed/031-agentsmd-module",
+        "adaptations": null
+      },
+      "base_template": "spec-agentsmd.md",
+      "model": "sonnet",
+      "description": "Create or update spec-level AGENTS.md to track incomplete work state for multi-agent handoffs",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spec.summary",
+      "name": "Create Implementation Summary",
+      "family": "spectri-trail",
+      "category": "spectri-trail",
+      "origin": {
+        "source": "spectri",
+        "adaptations": null
+      },
+      "base_template": "summary.md",
+      "model": "sonnet",
+      "description": "Create implementation summary for recent work when automatic creation was missed",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spec.constitution",
+      "name": "Create or Update Project Constitution",
+      "family": "spectri-trail",
+      "category": "spectri-trail",
+      "origin": {
+        "source": "github-spec-kit",
+        "upstream_url": "https://github.com/github/spec-kit/blob/main/templates/commands/constitution.md",
+        "adaptations": "Renamed speckit\u2192spectri, simplified checkpoint from 35 lines to 2 lines"
+      },
+      "base_template": "constitution.md",
+      "model": "opus",
+      "description": "Create or update the project constitution from interactive or provided principle inputs, ensuring all dependent templates stay in sync.",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "frontmatter-update"
+        },
+        {
+          "injection_id": "summary-creation",
+          "params": {
+            "scope": "constitution"
+          }
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spec.update-meta",
+      "name": "Update Spec Metadata",
+      "family": "spectri-trail",
+      "category": "spectri-trail",
+      "origin": {
+        "source": "spectri",
+        "adaptations": null
+      },
+      "base_template": "update-meta.md",
+      "model": "sonnet",
+      "description": "Update spec meta.json fields interactively or via arguments, wrapping update-spec-meta.sh for user-friendly metadata management.",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spec.create-command",
+      "name": "Create New Command",
+      "family": "spectri-spectri",
+      "category": "spectri-spectri",
+      "origin": {
+        "source": "spectri",
+        "adaptations": null
+      },
+      "base_template": "create-command.md",
+      "model": "sonnet",
+      "ships_with_product": false,
+      "description": "Create a new Spectri command following Spec Kit format standards and pedagogical design principles.",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        }
+      ]
+    },
+    {
+      "id": "spec.retro",
+      "name": "Create Retrospective Specification",
+      "family": "spectri-core",
+      "category": "spectri-core",
+      "origin": {
+        "source": "github-spec-kit",
+        "upstream_url": "https://github.com/github/spec-kit/blob/main/templates/commands/document.md",
+        "adaptations": "Renamed speckit\u2192spectri, renamed document\u2192retro, added discovery framework"
+      },
+      "base_template": "retro.md",
+      "model": "sonnet",
+      "description": "Create a retrospective spec for an already-implemented feature. Documents what EXISTS, not what SHOULD exist.",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "frontmatter-update"
+        },
+        {
+          "injection_id": "summary-creation",
+          "params": {
+            "scope": "retrospective spec"
+          }
+        },
+        {
+          "injection_id": "meta-update",
+          "params": {
+            "doc": "spec.md"
+          }
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spec.rfc",
+      "name": "Create or Update Request for Comments (RFC)",
+      "family": "spectri-trail",
+      "category": "spectri-trail",
+      "origin": {
+        "source": "spectri",
+        "adaptations": null
+      },
+      "base_template": "rfc.md",
+      "model": "sonnet",
+      "description": "Create or update Request for Comments (RFC) to document pre-decision architectural proposals",
+      "injections": [
+        {
+          "injection_id": "user-input"
+        },
+        {
+          "injection_id": "finalization-verification"
+        }
+      ]
+    },
+    {
+      "id": "spectri.update-spectri-md",
+      "name": "Update SPECTRI.md",
+      "family": "spectri-spectri",
+      "category": "spectri-spectri",
+      "origin": {
+        "source": "spectri",
+        "adaptations": null
+      },
+      "base_template": "update-spectri-md.md",
+      "model": "sonnet",
+      "ships_with_product": false,
+      "description": "Validate and deploy SPECTRI.md sections from single source file",
+      "injections": []
+    }
+  ]
+}

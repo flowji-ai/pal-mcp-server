@@ -1,7 +1,106 @@
 {
   "permissions": {
-    "allow": [
-    ],
+    "allow": [],
     "deny": []
+  },
+  "hooks": {
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .spectri/scripts/hooks/inject-session-start.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .spectri/scripts/hooks/spec-folder-watchdog.sh",
+            "timeout": 10
+          }
+        ],
+        "matcher": "Write"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .spectri/scripts/hooks/spec-folder-watchdog.sh",
+            "timeout": 10
+          }
+        ],
+        "matcher": "Edit"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .spectri/scripts/hooks/artifact-write-guard.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash .spectri/scripts/hooks/spec-folder-edit-guard.sh",
+            "timeout": 10
+          }
+        ],
+        "matcher": "Write"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .spectri/scripts/hooks/artifact-write-guard.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash .spectri/scripts/hooks/spec-folder-edit-guard.sh",
+            "timeout": 10
+          }
+        ],
+        "matcher": "Edit"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .spectri/scripts/hooks/inject-session-start.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .spectri/scripts/hooks/inject-session-start.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .spectri/scripts/hooks/inject-user-prompt.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }
