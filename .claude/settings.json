@@ -35,6 +35,16 @@
           }
         ],
         "matcher": "Edit"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .spectri/scripts/hooks/postcommit-review-gate.sh",
+            "timeout": 10
+          }
+        ],
+        "matcher": "Bash"
       }
     ],
     "PreToolUse": [
@@ -67,6 +77,16 @@
           }
         ],
         "matcher": "Edit"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .spectri/scripts/hooks/bash-write-guard.sh",
+            "timeout": 10
+          }
+        ],
+        "matcher": "Bash"
       }
     ],
     "SessionStart": [
@@ -75,6 +95,17 @@
           {
             "type": "command",
             "command": "bash .spectri/scripts/hooks/inject-session-start.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .spectri/scripts/hooks/stop-completion-gate.sh",
             "timeout": 10
           }
         ]

@@ -12,6 +12,20 @@
 - **Before advancing any spec to `deployed`, verify spec.md documents current behaviour — not planned, not aspirational.** The spec MUST describe what the code does right now. Check all tasks are complete and tests pass.
 - **Deployed specs are living documents.** When a deployed feature changes, update its spec in the same commit as the code change. Never create a new spec to replace an existing deployed one — that produces spec sprawl. Only `05-archived/` specs are read-only.
 
+### Rule Severity
+
+Not all rules have equal weight. **IRON LAW** rules are absolute and never have exceptions. **HARD-GATE** rules block progress until satisfied but may have documented exceptions.
+
+| Severity | Rule | Consequence of violation |
+|----------|------|------------------------|
+| IRON LAW | Never fabricate timestamps | Corrupted audit trail — data integrity lost |
+| IRON LAW | Never manually edit meta.json | Metadata corruption — use `/spec.update-meta` exclusively |
+| IRON LAW | Never create artifacts manually when a `/spec.*` command exists | Bypasses template structure, metadata, and validation |
+| IRON LAW | Never edit deployed files directly | Overwritten on next build/sync — work is lost |
+| HARD-GATE | Every commit is a complete bundle | Incomplete commits create drift between code, specs, and summaries |
+| HARD-GATE | Spec update in same commit as behaviour change | Spec diverges from reality the moment they are in different commits |
+| HARD-GATE | Use workflow skill for every code change | Skipped workflows are the most common source of incomplete bundles |
+
 ## Spec-Driven Development
 
 Before writing any code, identify the governing spec:

@@ -103,6 +103,33 @@
       "command": "bash .spectri/scripts/hooks/inject-user-prompt.sh",
       "timeout": 10,
       "agents": ["claude"]
+    },
+    {
+      "id": "bash-write-guard",
+      "description": "Blocks Bash commands that write to spectri/ artifact directories",
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "bash .spectri/scripts/hooks/bash-write-guard.sh",
+      "timeout": 10,
+      "agents": ["claude"]
+    },
+    {
+      "id": "stop-completion-gate",
+      "description": "Advisory check for missing implementation summary or spec update before completion",
+      "event": "Stop",
+      "matcher": null,
+      "command": "bash .spectri/scripts/hooks/stop-completion-gate.sh",
+      "timeout": 10,
+      "agents": ["claude"]
+    },
+    {
+      "id": "postcommit-review-gate",
+      "description": "Advisory post-commit check for missing bundle elements",
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "bash .spectri/scripts/hooks/postcommit-review-gate.sh",
+      "timeout": 10,
+      "agents": ["claude"]
     }
   ]
 }

@@ -1,0 +1,262 @@
+---
+managed_by: spectri
+description: "Update spec meta.json fields interactively or via arguments, wrapping update-spec-meta.sh for user-friendly metadata management."
+model: sonnet
+family: spectri-trail
+origin:
+  source: spectri
+injections_applied:
+  - user-input
+  - finalization-verification
+build_info:
+  built_at: 2026-03-26T05:51:03Z
+  manifest_version: 1.1.0
+---
+
+<!-- INJECT: post-frontmatter -->
+
+## User Input
+
+```text
+$ARGUMENTS
+```
+
+You **MUST** consider the user input before proceeding (if not empty).
+
+<!--
+  COMMAND TYPE: Hybrid
+
+  This command blends strategic decision-making (which fields to update, what values to use) with mechanical execution (calling update-spec-meta.sh to modify JSON).
+-->
+
+## Outline
+
+Goal: Provide a user-friendly interface for updating meta.json files in spec folders. The command wraps `.spectri/scripts/shared/update-spec-meta.sh` with interactive prompts and argument-based modes, making metadata updates accessible without manual JSON editing.
+
+**Prerequisites**: Spec folder must exist with meta.json at its root.
+
+**Dependencies**:
+- `.spectri/scripts/shared/update-spec-meta.sh` (handles actual JSON modifications)
+- `jq` (JSON processor, script dependency)
+
+**Why this command exists**: meta.json files track spec lifecycle (status, blockers, relationships). Manual JSON editing is error-prone and unfamiliar to many users. This command provides guided workflows (interactive mode) and quick updates (argument mode) while delegating safe JSON manipulation to the robust underlying script.
+
+Execution steps:
+
+1. **Parse arguments and determine mode**: Check if update arguments provided or interactive mode needed
+   - Parse command-line arguments: `--spec <path>`, `--status <value>`, `--add-blocker <text>`, `--remove-blocker <text>`, `--add-related-spec <name>`, `--add-related-repo <url>`, `--update-doc <filename>`, `--updated-by <agent>`, `--notes <text>`, `--add-implementation-summary <file> --summary-phase <phase> --summary-scope <scope> --summary-text <text>`
+   - **Mode decision**:
+     - **If any update argument provided** (--status, --add-blocker, --remove-blocker, --add-related-*, --update-doc, --notes): Use **argument-based mode**
+     - **Else**: Use **interactive mode**
+   - **If --spec not provided**: ERROR "Spec path required. Usage: /spec.update-meta --spec <path> [options]"
+
+2. **Validate spec path**: Ensure target folder exists and contains meta.json
+   - Check if `--spec` path exists
+   - **If path doesn't exist**: ERROR "Spec path does not exist: [path]"
+   - Check if `meta.json` exists at `<path>/meta.json`
+   - **If meta.json not found**: ERROR "meta.json not found at: [path]. Ensure the path points to a spec folder."
+   - Try parsing JSON with `jq '.' <path>/meta.json`
+   - **If jq fails**: ERROR "meta.json contains invalid JSON. Please fix syntax errors before updating."
+
+3. **Read current meta.json contents**: Load and display current state (for both modes)
+   - Read `<path>/meta.json`
+   - Parse with jq to extract current values
+   - Store snapshot for before/after comparison
+
+4. **Execute mode-specific workflow**: Branch to interactive or argument-based update
+
+   **INTERACTIVE MODE** (no update arguments provided):
+
+   a. **Display current meta.json**: Show all fields in readable format
+      ```
+      Current meta.json for [spec-name]:
+
+      Status: in-progress
+      Blockers:
+        - Waiting for spec 023 validation system
+      Related Specs:
+        - 023-verify-module
+      Related Repos:
+        - https://github.com/example/repo
+      Documents:
+        - spec.md (updated: 2026-01-15, by: Claude Vermilion Quokka 1557)
+        - plan.md (updated: 2026-01-14, by: Claude Cerulean Pangolin 1420)
+      Notes: Implementation blocked until research complete
+      ```
+
+   b. **Present field selection menu**: Prompt user to choose field to update
+      ```
+      Which field would you like to update?
+
+      1. Status (current: in-progress)
+      2. Add blocker
+      3. Remove blocker
+      4. Add related spec
+      5. Add related repo
+      6. Update document metadata
+      7. Update notes
+      8. Cancel (exit without changes)
+
+      Enter choice (1-8):
+      ```
+
+   c. **Process selected field**: Handle user's choice with field-specific prompts
+
+      **For status update (choice 1)**:
+      - Show valid status values: `draft`, `in-progress`, `iterating`, `ready-for-testing`, `resolving-issues`, `deployed`, `blocked`, `archived`
+      - Prompt: "Enter new status (current: [current-value]):"
+      - Validate input against valid values
+      - **If invalid**: Show error and re-prompt
+      - **If "deployed" or "archived"**: Warn "This will move the spec folder to deployed|archived]/"
+      - Set `--status` argument for script
+
+      **For blockers (choice 2-3)**:
+      - **Add blocker**: Prompt "Enter blocker description:", set `--add-blocker` argument
+      - **Remove blocker**:
+        - Display numbered list of current blockers
+        - Prompt "Enter blocker number to remove:"
+        - Set `--remove-blocker` argument with exact text match
+      - Ask "Add/remove another blocker? (y/n)" and repeat if yes
+
+      **For relationships (choice 4-5)**:
+      - **Add related spec**: Prompt "Enter spec folder name:", set `--add-related-spec`
+      - **Add related repo**: Prompt "Enter repository URL or name:", set `--add-related-repo`
+      - Ask "Add another [type]? (y/n)" and repeat if yes
+
+      **For document update (choice 6)**:
+      - Prompt "Enter document filename (e.g., plan.md):"
+      - Set `--update-doc` argument
+      - Prompt "Enter agent identifier (or press Enter to use $AGENT_SESSION_ID):"
+      - **If provided**: Set `--updated-by` argument
+      - **Else**: Read from `$AGENT_SESSION_ID` environment variable
+
+      **For notes (choice 7)**:
+      - Prompt "Enter notes (or leave blank to clear):"
+      - Set `--notes` argument
+
+      **For cancel (choice 8)**:
+      - Display "No changes made."
+      - Exit command
+
+   d. **Preview changes and confirm**: Show before/after comparison
+      ```
+      Proposed changes:
+
+      Field: status
+      Before: in-progress
+      After: deployed
+
+      Note: Folder will move to spectri/specs/04-deployed/
+
+      Apply these changes? (y/n):
+      ```
+      - **If no**: Return to field selection menu
+      - **If yes**: Proceed to step 5
+
+   **ARGUMENT-BASED MODE** (update arguments provided):
+
+   a. **Collect all update arguments**: Gather provided arguments
+      - Store each `--status`, `--add-blocker`, `--remove-blocker`, `--add-related-spec`, `--add-related-repo`, `--update-doc`, `--notes` argument
+      - **If --update-doc provided without --updated-by**: Use `$AGENT_SESSION_ID`
+
+   b. **Validate arguments**: Check for conflicts or invalid values
+      - **If --status provided**: Validate against valid values (draft, in-progress, iterating, ready-for-testing, resolving-issues, deployed, blocked, archived)
+      - **If invalid status**: ERROR "Invalid status value. Must be one of: draft, in-progress, iterating, ready-for-testing, resolving-issues, deployed, blocked, archived"
+
+   c. **Build script command**: Construct update-spec-meta.sh call with all arguments
+      - Skip preview/confirmation (direct execution in argument mode)
+
+5. **Invoke update script**: Call `.spectri/scripts/shared/update-spec-meta.sh` with arguments
+   - Build command: `bash .spectri/scripts/shared/update-spec-meta.sh --spec "<path>" [all-update-args]`
+   - Execute command
+   - Capture stdout and stderr
+   - **If script exits non-zero**:
+     - Display stderr
+     - ERROR "Update failed. Script error: [error-message]"
+   - **If script succeeds**: Continue to step 6
+
+6. **Display change summary**: Show before/after comparison of modified fields
+   - Re-read `<path>/meta.json`
+   - Compare with snapshot from step 3
+   - Identify changed fields
+   - Display summary:
+     ```
+     ## Update Complete
+
+     **Spec**: [spec-name]
+     **Changes Applied**:
+
+     | Field | Before | After |
+     |-------|--------|-------|
+     | status | in-progress | deployed |
+     | blockers | 1 item | 2 items |
+
+     **Folder moved to**: spectri/specs/04-deployed/[spec-name]/
+
+     **Next Steps**:
+     1. Verify meta.json reflects expected changes
+     2. Commit changes to git
+     ```
+
+---
+
+## Decision Framework for Field Updates
+
+Use this framework to determine which fields to update and when:
+
+| Field | When to Update | Common Values/Patterns |
+|-------|----------------|------------------------|
+| **status** | Spec lifecycle changes | draft → in-progress → iterating → ready-for-testing → resolving-issues → deployed → archived (also: blocked) |
+| **blockers** | Work is impeded | "Waiting for [dependency]", "Blocked on [issue]" |
+| **related_specs** | Dependency on other specs | Spec folder name (e.g., "023-verify-module") |
+| **related_repos** | External code dependency | GitHub URL or repo identifier |
+| **documents** | File created/modified | Track plan.md, tasks.md, research.md changes |
+| **implementation_summaries** | Work documented | Register via `--add-implementation-summary <file> --summary-phase <phase> --summary-scope <scope> --summary-text <text>` |
+| **notes** | Context or temporary info | Free-form text for temporary tracking |
+
+**Priority guidance**:
+- **Update status** whenever spec phase changes (most important for lifecycle tracking)
+- **Add blockers** immediately when work stops (makes impediments visible)
+- **Remove blockers** as soon as resolved (keeps tracking current)
+- **Track relationships** during planning (helps understand dependencies)
+- **Update documents** after creating/modifying files (enables multi-agent handoffs)
+
+## Anti-Patterns
+
+**Don't manually edit meta.json** - Always use this command or the underlying script. Manual edits risk:
+- Invalid JSON syntax
+- Missing required fields
+- Incorrect timestamp formats
+- Broken folder moves for deployed/archived status
+
+**Don't use generic blocker descriptions** - "Blocked" tells nothing. Instead: "Waiting for spec 023 validation system completion" or "API endpoint not yet implemented"
+
+**Don't forget to remove resolved blockers** - Stale blockers create confusion. Remove them as soon as impediment is cleared.
+
+**Don't update status to deployed without verifying completion** - Deployed status moves folders to spectri/specs/04-deployed/ and signals work is done. Ensure all tasks complete first.
+
+## Behavior Rules
+
+- If `--spec` argument missing, prompt for it (don't assume current directory)
+- If update arguments provided, skip interactive mode entirely (no redundant prompts)
+- If invalid status value provided, show valid options and re-prompt
+- If blocker doesn't exist during removal, inform user (don't error - no-op is acceptable)
+- If $AGENT_SESSION_ID not set and --updated-by not provided for document update, prompt user
+- If folder move required (deployed/archived status to spectri/specs/04-deployed/ or spectri/specs/05-archived/), verify source and target paths before script call
+
+---
+
+## References
+
+- Script: `.spectri/scripts/shared/update-spec-meta.sh` (underlying JSON modification tool)
+- Governing Spec: `spectri/specs/04-deployed/034-update-meta-module/spec.md`
+
+<!-- INJECT: post-finalization -->
+
+## Finalization Checklist
+
+Before completing this command, verify:
+
+- [ ] **Implementation summary created**: `bash .spectri/scripts/spectri-trail/create-implementation-summary.sh --spec "$SPEC_FOLDER" --scope "[scope]"`
+- [ ] **meta.json updated** (when applicable): `bash .spectri/scripts/shared/update-spec-meta.sh --spec "$SPEC_FOLDER" --updated-by "[session-id]"` (Only update meta.json when command modifies spec state, not during implementation phases)
+- [ ] **Work committed to git**: Commit using appropriate commands

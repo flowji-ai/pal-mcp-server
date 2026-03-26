@@ -1,0 +1,875 @@
+description = '''Create or update Request for Comments (RFC) to document pre-decision architectural proposals'''
+prompt = '''
+<!-- INJECT: post-frontmatter -->
+
+## User Input
+
+```text
+{{args}}
+```
+
+You **MUST** consider the user input before proceeding (if not empty).
+
+> **AGENT DIRECTIVE**: You are executing this command workflow, NOT modifying this command file. Follow the "Implementation Steps" section below to execute the requested operation. Do NOT attempt to edit files in `src/command-bases/` or rebuild command infrastructure.
+
+# Create or Update Request for Comments (RFC)
+
+**Command**: `/spec.rfc`
+**Purpose**: Create, update, or resolve Request for Comments (RFC) to document pre-decision architectural proposals
+**Usage**:
+- **Create**: `/spec.rfc --title "Proposal Title" [--type "System Architecture"]` or `/spec.rfc` (interactive)
+- **Update**: `/spec.rfc update <rfc-name> [--status "Converging"]`
+- **Resolve**: `/spec.rfc resolve <rfc-name> [--status "Implemented"] [--notes "reason"]`
+- **Graduate**: `/spec.rfc graduate <rfc-name> [--short-name "feature-name"]`
+
+---
+
+## What This Command Does
+
+**Create Mode**: Creates a new Request for Comments (RFC) in `spectri/rfc/`:
+- Date-based naming (RFC-YYYY-MM-DD-slug.md)
+- Structured template (Context, Problem Statement, Proposed Directions, Decision Criteria, Open Questions, Prerequisites)
+- Type classification (System Architecture, Process Change, Tooling Decision)
+- Status tracking (Under Discussion → Accepted/Rejected/Superseded)
+
+**Update Mode**: Adds a dated discussion section to an existing RFC:
+- Inserts new `## YYYY-MM-DD: [Description]` section (chronologically, newest at bottom)
+- Updates frontmatter (Date Updated, optionally Status)
+- Adds contributor attribution
+- Preserves all previous content (never overwrites)
+
+**Resolve Mode**: Marks an RFC as resolved and moves it to the resolved archive:
+- Updates Status to a terminal status (Implemented, Superseded, Resolved, Rejected)
+- Adds status history entry with date and resolution notes
+- Moves file to `spectri/rfc/resolved/`
+
+**Graduate Mode**: Creates a new spec from an accepted RFC:
+- Reads the RFC's context, problem statement, and chosen direction
+- Creates spec folder in `spectri/specs/01-drafting/NNN-short-name/` with standard structure
+- Pre-populates spec.md with RFC context (not a full spec — a starting point for `/spec.spectri`)
+- Links the RFC and spec bidirectionally
+- Optionally resolves the RFC after graduation
+
+RFCs enable exploration and discussion of multiple approaches before committing to ADRs, preserving the decision-making context.
+
+---
+
+## When to Use This Command
+
+**Use `/spec.rfc` (create mode) when**:
+- ✅ Exploring architectural approaches with multiple viable options
+- ✅ Documenting system-level changes that need stakeholder input
+- ✅ Proposing process or tooling changes before implementation
+- ✅ Need to capture "why we're considering this" before deciding
+
+**Use `/spec.rfc update` when**:
+- ✅ Discussion has progressed and you need to capture new thinking
+- ✅ Options have narrowed or a direction is converging
+- ✅ New information or decisions need documenting
+- ✅ Status is changing (Under Discussion → Converging → Accepted)
+
+**Use `/spec.rfc graduate` when**:
+- ✅ An RFC has been accepted and is ready to become a formal spec
+- ✅ You want to create a spec pre-populated with the RFC's context
+- ✅ Moving from exploration (RFC) to execution (spec)
+
+**Use `/spec.rfc resolve` when**:
+- ✅ RFC proposal has been implemented (feature built, spec written)
+- ✅ RFC has been superseded by a newer RFC or decision
+- ✅ RFC was rejected after discussion
+- ✅ Research RFC whose findings have been consumed
+
+**RFCs vs ADRs**:
+- **RFC**: Pre-decision exploration ("here are the options we're considering")
+- **ADR**: Post-decision record ("here's what we chose and why")
+
+---
+
+## Usage
+
+### Interactive Mode (Recommended)
+
+```
+/spec.rfc
+```
+
+Agent will prompt you for:
+1. Proposal title (will be slugified for filename)
+2. RFC type (System Architecture, Process Change, or Tooling Decision)
+
+### Direct Mode
+
+```
+/spec.rfc --title "Spec Restructure and Docusaurus Integration"
+```
+
+Creates RFC immediately with specified title (defaults to "System Architecture" type).
+
+```
+/spec.rfc --title "Command Build Process Changes" --type "Process Change"
+```
+
+Creates RFC with specific type classification.
+
+### Update Mode
+
+```
+/spec.rfc update spec-restructure
+```
+
+Adds a dated section to RFC-*-spec-restructure.md (finds by partial match).
+
+```
+/spec.rfc update spec-restructure --status "Converging"
+```
+
+Adds dated section AND updates the RFC status.
+
+```
+/spec.rfc update RFC-2026-01-17-spec-restructure.md
+```
+
+Full filename also works (with or without path).
+
+### Resolve Mode
+
+```
+/spec.rfc resolve inbox-capture --status "Implemented" --notes "Implemented as inbox capture system spec and deployed"
+```
+
+Marks the RFC as resolved and moves it to `spectri/rfc/resolved/`.
+
+```
+/spec.rfc resolve deployed-spec-iteration --status "Superseded" --superseded-by "RFC-2026-01-24-stage-based-spec-folder-organization"
+```
+
+Marks as superseded with reference to the replacing RFC.
+
+### Graduate Mode
+
+```
+/spec.rfc graduate inbox-capture
+```
+
+Creates a new spec from the RFC, pre-populated with its context and problem statement.
+
+```
+/spec.rfc graduate inbox-capture --short-name "inbox-capture-system"
+```
+
+Specifies the short name for the spec folder (otherwise derived from the RFC title).
+
+---
+
+## Implementation Steps
+
+Follow these steps when executing this command:
+
+### 1. Detect Mode
+
+**Graduate Mode** - if first argument is `graduate`:
+- Extract RFC name from second argument
+- Go to "Graduate Mode Steps" section below
+
+**Resolve Mode** - if first argument is `resolve`:
+- Extract RFC name from second argument
+- Go to "Resolve Mode Steps" section below
+
+**Update Mode** - if first argument is `update`:
+- Extract RFC name from second argument
+- Go to "Update Mode Steps" section below
+
+**Create Mode** - otherwise:
+- Go to "Create Mode Steps" section below
+
+---
+
+## Create Mode Steps
+
+### 2a. Gather Create Input
+
+**If no --title provided** (interactive mode):
+- Ask user: "What architectural proposal would you like to document?"
+- Wait for user to provide proposal title
+- Example: "Spec Restructure and Docusaurus Integration"
+
+**If no --type provided** (interactive mode):
+- Ask user: "What type of RFC is this?"
+- Options: "System Architecture", "Process Change", "Tooling Decision"
+- Default to "System Architecture" if user doesn't specify
+
+**If --title and --type provided**:
+- Use provided values directly
+
+### 2b. Create RFC File
+
+Execute RFC creation script:
+
+```bash
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+RESULT=$("$REPO_ROOT/.spectri/scripts/spectri-trail/create-rfc.sh" --title "$TITLE" --type "$TYPE" --json)
+```
+
+Parse JSON result:
+- `id`: Date-based RFC identifier (e.g., "2026-01-19")
+- `path`: Absolute path to created RFC file
+- `slug`: Slugified filename
+- `title`: Proposal title
+- `type`: RFC type classification
+
+### 3. Provide Next Steps Guidance
+
+Display success message with guidance:
+
+```
+✅ RFC-$RFC_ID created successfully!
+
+   File: $RFC_PATH
+   Title: $TITLE
+   Type: $TYPE
+
+📝 Next Steps:
+
+1. Edit the RFC file to fill in:
+   - Context: Background and current situation
+   - Problem Statement: Challenges being addressed
+   - Proposed Directions: Multiple options with descriptions, rationales, and tradeoffs
+   - Decision Criteria: How options will be evaluated
+   - Open Questions: What needs answering before deciding
+   - Prerequisites: What must be completed first
+
+2. RFC Structure Tips:
+   - Document MULTIPLE options (at least 2) — a single-solution RFC is not an RFC, it's an implementation guide
+   - Include tradeoffs for each option (pros/cons)
+   - List open questions that need resolution
+   - Keep status as "Under Discussion" while exploring
+   - NEVER reference specs by number that don't exist yet — spec numbers are assigned by `/spec.specify` when created
+     - ❌ Wrong: "See spec 051 for details" or "This will become spec 055"
+     - ✅ Right: "See the planned authentication system" or "A future spec will cover this"
+   - Remember the document type hierarchy: RFC (explore) → ADR (decide) → Spec (define) → Plan (implement)
+
+3. Update Status When Ready:
+   - "Accepted" → Create ADRs from chosen direction
+   - "Rejected" → Document why proposal not pursued
+   - "Superseded" → Link to newer RFC that replaces this
+
+4. Commit RFC:
+   git add $RFC_PATH
+   git commit -m "docs: Add RFC-$RFC_ID for $TITLE"
+
+📚 For guidance on RFCs vs ADRs, see: spectri/specs/04-deployed/030-rfc-module/spec.md
+```
+
+### 4. Error Handling
+
+Handle common errors gracefully:
+
+**Template not found**:
+```
+ERROR: RFC template not found at .spectri/templates/spectri-trail/rfc-template.md
+
+This usually means the RFC system hasn't been set up yet.
+Run: git pull origin main  # To get latest templates
+```
+
+**Script not found**:
+```
+ERROR: create-rfc.sh script not found at .spectri/scripts/spectri-trail/create-rfc.sh
+
+The RFC system may not be installed yet.
+Check: Is this a Spectri repository with RFC support?
+```
+
+**Filesystem errors**:
+```
+ERROR: Could not create RFC file at $RFC_PATH
+
+Possible causes:
+- Insufficient permissions (check directory write access)
+- Disk space full
+- Invalid characters in title
+```
+
+---
+
+## Update Mode Steps
+
+### 3a. Find RFC File
+
+Search for RFC by name in `spectri/rfc/`:
+
+```bash
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+RFC_DIR="$REPO_ROOT/spectri/rfc"
+
+# Find RFC by partial match (case-insensitive)
+RFC_FILE=$(find "$RFC_DIR" -name "*$RFC_NAME*" -type f 2>/dev/null | head -1)
+```
+
+**If not found**:
+```
+ERROR: No RFC found matching "$RFC_NAME"
+
+Available RFCs:
+$(ls -1 "$RFC_DIR"/*.md 2>/dev/null | xargs -n1 basename)
+```
+
+**If multiple matches**: List matches and ask user to be more specific.
+
+### 3b. Gather Update Input
+
+**Prompt for section title**:
+- Ask user: "What should this update section be titled?"
+- Suggest: "Converged Proposal", "Implementation Decision", "Revised Direction", etc.
+- Example response: "Converged Proposal"
+
+**Prompt for section content**:
+- Ask user: "Summarize the key points for this update (or paste content)"
+- User provides summary of discussion, decisions made, what's still open
+
+**Convergence check**: If the update content describes a single agreed approach with no remaining alternatives, suggest to the user: "Discussion appears to have converged — consider updating status to 'Converging' or 'Accepted' if the direction is decided."
+
+**If --status provided**:
+- Will update RFC status in frontmatter
+- Valid statuses: "Under Discussion", "Converging", "Accepted", "Rejected", "Superseded"
+
+### 3c. Update RFC File
+
+**Read existing RFC** and identify insertion point (before `## Status History`).
+
+**Update frontmatter**:
+```yaml
+Date Updated: [current timestamp]
+Status: [new status if --status provided]
+```
+
+**Insert new dated section** (before Status History, after any existing dated sections):
+```markdown
+---
+
+## YYYY-MM-DD: [Section Title]
+
+[User-provided content]
+
+---
+```
+
+**Update Status History table** (add new row):
+```markdown
+| [Status] | YYYY-MM-DD | [Section title or status change note] |
+```
+
+**Add contributor** to footer if not already listed.
+
+### 3d. Provide Update Confirmation
+
+Display success message:
+
+```
+✅ RFC updated successfully!
+
+   File: $RFC_PATH
+   New section: "## YYYY-MM-DD: $SECTION_TITLE"
+   Status: $STATUS (if changed)
+
+📝 Changes made:
+   - Added dated discussion section
+   - Updated Date Updated in frontmatter
+   - Added row to Status History table
+   - Added contributor attribution
+
+💡 Tip: Review the update and commit:
+   git add $RFC_PATH
+   git commit -m "docs: Update RFC with $SECTION_TITLE"
+```
+
+### 3e. Update Error Handling
+
+**RFC not found**:
+```
+ERROR: No RFC found matching "$RFC_NAME"
+
+Try:
+- Check spelling
+- Use partial filename (e.g., "spec-restructure" instead of full name)
+- List available RFCs: ls spectri/rfc/
+```
+
+**Invalid status**:
+```
+ERROR: Invalid status "$STATUS"
+
+Valid statuses:
+- Under Discussion
+- Converging
+- Accepted
+- Rejected
+- Superseded
+```
+
+**Parse error** (malformed RFC):
+```
+ERROR: Could not parse RFC file structure
+
+The RFC may have been manually edited in a way that breaks the expected format.
+Please check the file structure matches the RFC template.
+```
+
+---
+
+## Resolve Mode Steps
+
+### 4a. Find RFC File
+
+Same partial-match logic as Update Mode (section 3a above).
+
+### 4b. Gather Resolve Input
+
+**If --status not provided** (interactive mode):
+- Ask user to select terminal status:
+  1. Implemented — RFC proposal was built
+  2. Superseded — Replaced by another RFC or decision
+  3. Resolved — Concluded without direct implementation (e.g., research consumed)
+  4. Rejected — Proposal declined
+
+**If --notes not provided**:
+- Ask user: "Resolution notes (or press Enter to skip)"
+
+**If status is Superseded and --superseded-by not provided**:
+- Ask user: "Superseded by which RFC? (filename or press Enter to skip)"
+
+### 4c. Execute Resolution
+
+Run the resolve-rfc.sh script:
+
+```bash
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+"$REPO_ROOT/.spectri/scripts/spectri-trail/resolve-rfc.sh" "$RFC_NAME" --status "$STATUS" --notes "$NOTES"
+```
+
+The script handles:
+- Updating frontmatter (Status, Date Updated)
+- Appending to Status History table
+- Moving file to `spectri/rfc/resolved/` via `git mv`
+
+### 4d. Provide Resolve Confirmation
+
+Display success message:
+
+```
+RFC resolved: $BASENAME
+  Status: $STATUS
+  Date: $TODAY
+  Notes: $NOTES
+  Moved to: spectri/rfc/resolved/$BASENAME
+
+Commit the change:
+  git add spectri/rfc/resolved/$BASENAME
+  git commit -m "docs: Resolve RFC $BASENAME ($STATUS)"
+```
+
+### 4e. Resolve Error Handling
+
+**RFC not found**: Same as Update Mode (section 3e).
+
+**Invalid status**:
+```
+ERROR: Invalid status "$STATUS"
+
+Valid terminal statuses for resolve:
+- Implemented
+- Superseded
+- Resolved
+- Rejected
+```
+
+**RFC already resolved** (file in resolved/ folder):
+```
+ERROR: RFC "$BASENAME" is already in resolved/
+
+To view resolved RFCs: ls spectri/rfc/resolved/
+```
+
+---
+
+## Graduate Mode Steps
+
+### 5a. Find and Read RFC
+
+Same partial-match logic as Update Mode (section 3a above). Read the full RFC content.
+
+### 5b. Validate RFC State
+
+- RFC should have Status "Accepted" or "Converging" (warn if "Under Discussion" but allow proceeding)
+- RFC must not already be in `resolved/`
+
+If status is "Under Discussion":
+```
+WARNING: This RFC is still "Under Discussion".
+Graduate anyway? This will create a spec and mark the RFC as graduated.
+```
+
+### 5c. Determine Short Name
+
+**If --short-name provided**: Use it directly.
+
+**If not provided**: Derive from RFC title:
+- Extract title from RFC `# RFC-YYYY-MM-DD: [Title]` heading
+- Convert to kebab-case (lowercase, hyphens, strip special characters)
+- Truncate to 4 words max
+- Present to user for confirmation: "Short name for spec: `$SHORT_NAME` — OK? (or type a different one)"
+
+### 5d. Create Spec Folder
+
+Get next spec number and create folder structure:
+
+```bash
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+SPEC_NUMBER=$("$REPO_ROOT/.spectri/scripts/shared/get-next-spec-number.sh")
+SPEC_DIR="$REPO_ROOT/spectri/specs/01-drafting/${SPEC_NUMBER}-${SHORT_NAME}"
+
+mkdir -p "$SPEC_DIR/checklists"
+mkdir -p "$SPEC_DIR/implementation-summaries"
+touch "$SPEC_DIR/checklists/.gitkeep"
+touch "$SPEC_DIR/implementation-summaries/.gitkeep"
+```
+
+### 5e. Create meta.json
+
+```bash
+sed -e "s|\[ISO_TIMESTAMP\]|$(date -Iseconds)|g" \
+    -e "s|\[AGENT_SESSION_ID\]|Your Session ID|g" \
+    "$REPO_ROOT/.spectri/templates/spectri-core/meta-template.json" > "$SPEC_DIR/meta.json"
+```
+
+### 5f. Create Pre-Populated spec.md
+
+Create `$SPEC_DIR/spec.md` with content extracted from the RFC. This is a **starting point**, not a complete spec — the user should run `/spec.spectri` to flesh it out.
+
+```markdown
+---
+Date Created: [current timestamp]
+Date Updated: [current timestamp]
+Spec Number: [NNN]
+Status: draft
+Source RFC: [RFC filename]
+---
+
+# [Feature Title derived from RFC title]
+
+> This spec was graduated from [RFC-YYYY-MM-DD-slug.md](../../spectri/rfc/[path-to-rfc]).
+> Run `/spec.spectri` to develop this into a full specification.
+
+## Context
+
+[Copy the RFC's Context section verbatim]
+
+## Problem Statement
+
+[Copy the RFC's Problem Statement section verbatim]
+
+## Chosen Direction
+
+[If the RFC had an accepted/converging option, summarize it here. If multiple options remain, list the leading candidate.]
+
+## User Stories
+
+<!-- To be developed with /spec.specify -->
+
+## Functional Requirements
+
+<!-- To be developed with /spec.specify -->
+
+## Acceptance Criteria
+
+<!-- To be developed with /spec.specify -->
+```
+
+### 5g. Update RFC with Graduation Link
+
+Add a dated discussion section to the RFC:
+
+```markdown
+## YYYY-MM-DD: Graduated to Spec
+
+This RFC has been graduated to spec [NNN-short-name](../../spectri/specs/01-drafting/NNN-short-name/spec.md).
+```
+
+Update RFC frontmatter:
+- `Date Updated: [current timestamp]`
+
+Add Status History row:
+```
+| Graduated | YYYY-MM-DD | Graduated to spec NNN-short-name |
+```
+
+### 5h. Ask About Resolution
+
+After graduation, ask the user:
+
+```
+Spec created at spectri/specs/01-drafting/NNN-short-name/
+
+Resolve this RFC now?
+  1) Yes — mark as Implemented and move to resolved/
+  2) No — keep RFC active (e.g., if spec only covers part of the RFC)
+```
+
+If user chooses yes, call `resolve-rfc.sh` with `--status "Implemented" --notes "Graduated to spec NNN-short-name"`.
+
+### 5i. Provide Graduate Confirmation
+
+```
+RFC graduated to spec:
+  RFC: $RFC_BASENAME
+  Spec: spectri/specs/01-drafting/$SPEC_NUMBER-$SHORT_NAME/
+  Spec file: spectri/specs/01-drafting/$SPEC_NUMBER-$SHORT_NAME/spec.md
+
+Next steps:
+  1. Review the pre-populated spec.md
+  2. Run /spec.specify to develop full user stories and requirements
+  3. Run /spec.plan to create implementation plan
+```
+
+### 5j. Graduate Error Handling
+
+**RFC not found**: Same as Update Mode (section 3e).
+
+**Spec number collision**:
+```
+ERROR: Spec folder already exists: spectri/specs/01-drafting/$SPEC_NUMBER-$SHORT_NAME/
+
+Check if this RFC was already graduated or if the short name conflicts.
+```
+
+**get-next-spec-number.sh not found**:
+```
+ERROR: Script not found: .spectri/scripts/shared/get-next-spec-number.sh
+
+The spec numbering system may not be installed.
+```
+
+---
+
+## Examples
+
+### Example 1: Create RFC for Spec Restructure
+
+**User Input**:
+```
+/spec.rfc --title "Spec Restructure and Docusaurus Integration"
+```
+
+**Agent Actions**:
+1. Create RFC-2026-01-19-spec-restructure-and-docusaurus-integration.md (assuming first RFC today)
+2. Set type to "System Architecture" (default)
+3. Display next steps guidance
+
+**Result**:
+```
+✅ RFC-2026-01-19 created: spectri/rfc/RFC-2026-01-19-spec-restructure-and-docusaurus-integration.md
+
+User can now edit file to document:
+- Context: Current spec organization challenges
+- Problem Statement: Navigation difficulty, scattered summaries
+- Proposed Directions:
+  * Option 1: Archive and recreate by category
+  * Option 2: Keep existing, add metadata
+  * Option 3: Documentation-Driven Development (DDD)
+- Decision Criteria: Maintenance overhead, migration effort, flexibility
+- Open Questions: Timing, tooling needs, SDD vs DDD
+```
+
+### Example 2: Interactive Mode for Process Change
+
+**User Input**:
+```
+/spec.rfc
+```
+
+**Agent Prompts**:
+```
+What architectural proposal would you like to document?
+> Command Build Process Improvements
+
+What type of RFC is this? (System Architecture, Process Change, Tooling Decision)
+> Process Change
+```
+
+**Agent Actions**:
+1. Create RFC-2026-01-19-command-build-process-improvements.md
+2. Set type to "Process Change"
+3. Display next steps
+
+### Example 3: Update RFC with Converged Proposal
+
+**User Input**:
+```
+/spec.rfc update spec-restructure --status "Converging"
+```
+
+**Agent Prompts**:
+```
+Found: RFC-2026-01-17-spec-restructure.md
+
+What should this update section be titled?
+> Converged Proposal
+
+Summarize the key points for this update:
+> After discussion, we've converged on one spec per command (32 total specs),
+> mirroring the command folder structure. Categories will be in frontmatter,
+> not folders. Legacy specs archived to _legacy/.
+```
+
+**Agent Actions**:
+1. Find RFC-2026-01-17-spec-restructure.md
+2. Update frontmatter: Date Updated, Status → "Converging"
+3. Insert `## 2026-01-19: Converged Proposal` section before Status History
+4. Add row to Status History table
+5. Add contributor attribution
+6. Display confirmation
+
+**Result**:
+```
+✅ RFC updated successfully!
+
+   File: spectri/rfc/RFC-2026-01-17-spec-restructure.md
+   New section: "## 2026-01-19: Converged Proposal"
+   Status: Converging
+
+📝 Changes made:
+   - Added dated discussion section
+   - Updated Date Updated in frontmatter
+   - Updated Status to "Converging"
+   - Added row to Status History table
+```
+
+### Example 4: Resolve an Implemented RFC
+
+**User Input**:
+```
+/spec.rfc resolve inbox-capture --status "Implemented" --notes "Implemented as inbox capture system spec and deployed"
+```
+
+**Agent Actions**:
+1. Find RFC-2026-01-22-inbox-capture-system.md
+2. Run resolve-rfc.sh with provided arguments
+3. Script updates frontmatter, appends status history, moves to resolved/
+4. Display confirmation
+
+**Result**:
+```
+RFC resolved: RFC-2026-01-22-inbox-capture-system.md
+  Status: Implemented
+  Date: 2026-02-01
+  Notes: Implemented as inbox capture system spec and deployed
+  Moved to: spectri/rfc/resolved/RFC-2026-01-22-inbox-capture-system.md
+```
+
+### Example 5: Graduate RFC to Spec
+
+**User Input**:
+```
+/spec.rfc graduate constitution-restructure
+```
+
+**Agent Actions**:
+1. Find RFC-2026-01-24-constitution-restructure.md
+2. Derive short name: `constitution-restructure`
+3. Get next spec number (e.g., 099)
+4. Create `spectri/specs/01-drafting/099-example-feature/` with subfolders
+5. Create spec.md pre-populated with RFC context and problem statement
+6. Add graduation link to RFC
+7. Ask user if they want to resolve the RFC
+
+**Result**:
+```
+RFC graduated to spec:
+  RFC: RFC-2026-01-24-constitution-restructure.md
+  Spec: spectri/specs/01-drafting/099-example-feature/
+  Spec file: spectri/specs/01-drafting/099-example-feature/spec.md
+
+Next steps:
+  1. Review the pre-populated spec.md
+  2. Run /spec.specify to develop full user stories and requirements
+  3. Run /spec.plan to create implementation plan
+```
+
+---
+
+## Validation
+
+**Create Mode** - Before completing:
+- ✅ RFC file created in spectri/rfc/RFC-YYYY-MM-DD-slug.md
+- ✅ Date-based ID correctly generated
+- ✅ Template structure intact (all sections present)
+- ✅ Frontmatter populated with current date/time and RFC type
+- ✅ Title and status history updated with today's date
+- ✅ User guidance provided for next steps
+- ✅ No errors or warnings displayed
+
+**Update Mode** - Before completing:
+- ✅ Existing RFC found and read successfully
+- ✅ New dated section inserted before Status History
+- ✅ Frontmatter Date Updated field updated
+- ✅ Status updated (if --status provided)
+- ✅ Status History table has new row
+- ✅ Contributor added to footer
+- ✅ Previous content preserved (nothing deleted)
+
+**Resolve Mode** - Before completing:
+- ✅ RFC file found via partial match
+- ✅ Status updated to terminal value (Implemented/Superseded/Resolved/Rejected)
+- ✅ Date Updated field updated in frontmatter
+- ✅ Status History table has new row with resolution notes
+- ✅ File moved to spectri/rfc/resolved/
+- ✅ Git mv used (preserves history)
+
+**Graduate Mode** - Before completing:
+- ✅ RFC file found and read
+- ✅ Short name derived or provided
+- ✅ Next spec number obtained from get-next-spec-number.sh
+- ✅ Spec folder created in spectri/specs/01-drafting/ with checklists/ and implementation-summaries/
+- ✅ meta.json created from template
+- ✅ spec.md created with RFC context, problem statement, and chosen direction
+- ✅ RFC updated with graduation link and status history entry
+- ✅ User asked about resolving the RFC
+
+---
+
+## Date-Based Naming
+
+RFCs use date-based naming to:
+- Provide chronological context (instantly see how old a proposal is)
+- Avoid confusion with ADR sequential numbering (RFC-2026-01-17 vs ADR-0001)
+- Enable natural sorting by creation date
+- Highlight stale RFCs waiting for decisions
+
+The slug (slugified title) ensures filename uniqueness even for same-day RFCs.
+
+---
+
+## References
+
+- **RFC System Spec**: [spectri/specs/04-deployed/030-rfc-module/spec.md](../../spectri/specs/04-deployed/030-rfc-module/spec.md)
+- **ADR System Spec**: [spectri/specs/04-deployed/028-adr-module/spec.md](../../spectri/specs/04-deployed/028-adr-module/spec.md)
+- **RFC Template**: [.spectri/templates/spectri-trail/rfc-template.md](../../.spectri/templates/spectri-trail/rfc-template.md)
+
+---
+
+**Command Type**: Creation
+**Estimated Duration**: 1-2 minutes (creation) + 20-60 minutes (user fills in content)
+**Prerequisites**: RFC system installed (template, scripts, directory structure)
+**Output**: New RFC file in spectri/rfc/ with date-based naming
+
+<!-- INJECT: post-finalization -->
+
+## Finalization Checklist
+
+Before completing this command, verify:
+
+- [ ] **Implementation summary created**: `bash .spectri/scripts/spectri-trail/create-implementation-summary.sh --spec "$SPEC_FOLDER" --scope "[scope]"`
+- [ ] **meta.json updated** (when applicable): `bash .spectri/scripts/shared/update-spec-meta.sh --spec "$SPEC_FOLDER" --updated-by "[session-id]"` (Only update meta.json when command modifies spec state, not during implementation phases)
+- [ ] **Work committed to git**: Commit using appropriate commands
+'''
+model = "sonnet"

@@ -23,6 +23,16 @@ Scope: [SCOPE]
 |------|--------|-------|
 | [path] | [what changed] | [why / context] |
 
+## What Failed Before the Working Approach (Optional)
+
+> [!WARNING]
+> Document what was tried and rejected BEFORE documenting what worked.
+> This captures the search space so future agents do not repeat dead ends.
+
+| Approach tried | Why it failed | Time spent |
+|---------------|--------------|------------|
+| [approach] | [reason it was rejected] | [rough estimate] |
+
 ## Problems & Decisions (Optional)
 
 > [!NOTE]
