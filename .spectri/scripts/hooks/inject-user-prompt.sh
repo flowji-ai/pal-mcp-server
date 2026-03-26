@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-REMINDER="You MUST use a Spectri skill or /spec.* command if one exists for the action you are about to take. This is not optional. Confirm with the user which skill or command you are going to use before using it. Do not rationalise skipping this."
+REMINDER="TOOLING-FIRST LAW — ZERO EXCEPTIONS. Before taking any action in response to this request, check your available skills and commands for existing automation. If a Spectri skill or /spec.* command covers any actions you are about to take, you MUST use it — manual execution is a violation. State the skill or command you will use and get user confirmation before proceeding. If none exists, state that no matching skill or command applies and why. Skipping this, rationalising around it, or proceeding without confirmation is forbidden."
 
 cat <<JSONEOF
 {
