@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-REMINDER="BEFORE responding: check if a Spectri skill applies to this task (even 1% chance). If yes, invoke it via the Skill tool FIRST. If you are about to create a file in spectri/, check if a creation script exists. Do not rationalise skipping this check."
+REMINDER="You MUST use a Spectri skill or /spec.* command if one exists for the action you are about to take. This is not optional. Confirm with the user which skill or command you are going to use before using it. Do not rationalise skipping this."
 
 cat <<JSONEOF
 {

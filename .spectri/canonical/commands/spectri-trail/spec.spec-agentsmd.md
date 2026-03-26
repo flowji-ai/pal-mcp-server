@@ -8,7 +8,7 @@ injections_applied:
   - user-input
   - finalization-verification
 build_info:
-  built_at: 2026-03-26T05:51:02Z
+  built_at: 2026-03-26T07:35:29Z
   manifest_version: 1.1.0
 ---
 # Per-Spec AGENTS.md Management

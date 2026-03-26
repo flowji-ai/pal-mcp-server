@@ -9,7 +9,7 @@ injections_applied:
   - user-input
   - finalization-verification
 build_info:
-  built_at: 2026-03-26T05:51:04Z
+  built_at: 2026-03-26T07:35:30Z
   manifest_version: 1.1.0
 ---
 <!-- INJECT: post-frontmatter -->
