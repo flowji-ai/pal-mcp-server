@@ -15,6 +15,7 @@ Key features:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import TYPE_CHECKING, Any
@@ -475,6 +476,19 @@ of the evidence, even when it strongly points in one direction.""",
                 step_data = self.prepare_step_data(request)
                 self.work_history.append(step_data)
                 self._update_consolidated_findings(step_data)
+
+                # Rate-limit protection: pause before consulting subsequent models
+                # to avoid RPM throttling when multiple models use the same provider
+                if model_idx > 0:
+                    from config import DEFAULT_CONSENSUS_INTER_MODEL_DELAY
+
+                    if DEFAULT_CONSENSUS_INTER_MODEL_DELAY > 0:
+                        logger.info(
+                            "Consensus rate-limit guard: waiting %.1fs before consulting model %s",
+                            DEFAULT_CONSENSUS_INTER_MODEL_DELAY,
+                            self.models_to_consult[model_idx].get("model", "unknown"),
+                        )
+                        await asyncio.sleep(DEFAULT_CONSENSUS_INTER_MODEL_DELAY)
 
                 # Consult the model for this step
                 model_response = await self._consult_model(self.models_to_consult[model_idx], request)

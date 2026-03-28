@@ -1,6 +1,8 @@
 {
   "permissions": {
-    "allow": [],
+    "allow": [
+      "mcp__pal__chat"
+    ],
     "deny": []
   },
   "hooks": {
@@ -17,38 +19,39 @@
     ],
     "PostToolUse": [
       {
+        "matcher": "Write",
         "hooks": [
           {
             "type": "command",
             "command": "bash .spectri/scripts/hooks/spec-folder-watchdog.sh",
             "timeout": 10
           }
-        ],
-        "matcher": "Write"
+        ]
       },
       {
+        "matcher": "Edit",
         "hooks": [
           {
             "type": "command",
             "command": "bash .spectri/scripts/hooks/spec-folder-watchdog.sh",
             "timeout": 10
           }
-        ],
-        "matcher": "Edit"
+        ]
       },
       {
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
             "command": "bash .spectri/scripts/hooks/postcommit-review-gate.sh",
             "timeout": 10
           }
-        ],
-        "matcher": "Bash"
+        ]
       }
     ],
     "PreToolUse": [
       {
+        "matcher": "Write",
         "hooks": [
           {
             "type": "command",
@@ -60,10 +63,10 @@
             "command": "bash .spectri/scripts/hooks/spec-folder-edit-guard.sh",
             "timeout": 10
           }
-        ],
-        "matcher": "Write"
+        ]
       },
       {
+        "matcher": "Edit",
         "hooks": [
           {
             "type": "command",
@@ -75,18 +78,17 @@
             "command": "bash .spectri/scripts/hooks/spec-folder-edit-guard.sh",
             "timeout": 10
           }
-        ],
-        "matcher": "Edit"
+        ]
       },
       {
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
             "command": "bash .spectri/scripts/hooks/bash-write-guard.sh",
             "timeout": 10
           }
-        ],
-        "matcher": "Bash"
+        ]
       }
     ],
     "SessionStart": [

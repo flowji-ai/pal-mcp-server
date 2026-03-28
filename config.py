@@ -73,6 +73,11 @@ DEFAULT_THINKING_MODE_THINKDEEP = get_env("DEFAULT_THINKING_MODE_THINKDEEP", "hi
 DEFAULT_CONSENSUS_TIMEOUT = 120.0  # 2 minutes per model
 DEFAULT_CONSENSUS_MAX_INSTANCES_PER_COMBINATION = 2
 
+# Inter-model delay to avoid RPM rate limits when consulting multiple models
+# from the same provider (e.g., g25-pro used with different stances).
+# Applied before each consultation after the first.
+DEFAULT_CONSENSUS_INTER_MODEL_DELAY = float(get_env("CONSENSUS_INTER_MODEL_DELAY", "5.0") or "5.0")
+
 # NOTE: Consensus tool now uses sequential processing for MCP compatibility
 # Concurrent processing was removed to avoid async pattern violations
 
