@@ -204,7 +204,8 @@ All three architecture reviewers agreed on these keepers:
 | Centralized `ModelResolver` | Medium | One service, one cache, one resolution path for aliases |
 | Async-first providers | Medium | Use `AsyncOpenAI` client, not sync |
 | Structured observability | Medium | Request tracing, latency, token usage as structured JSON events |
-| CLI mode | Medium | Expose as both MCP server and CLI tool (investigate mcp-to-cli bridges) |
+| CLI-first architecture | High | Build as CLI tool from the start, with optional MCP wrapper. CLI is 10-32x cheaper and 100% reliable vs MCP's 72% |
+| CLI-Anything integration | Medium | Use CLI-Anything (github.com/HKUDS/CLI-Anything, 21K+ stars) to auto-generate CLI from codebase, publish to CLI-Hub registry |
 | Agent-to-agent chat | Low | Design for it, implement later |
 | Config protection | High | `~/.claude.json` must not be wipeable by upstream scripts |
 
