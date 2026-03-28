@@ -6,11 +6,25 @@
 
 A multi-model orchestration server that is part of the **Spectri family** (alongside Spectri, Spectri Scribe, Spectri Speak, and the Spectri Claude Plugin). Spectri users can opt into multi-model capabilities: consensus reviews, multi-agent code review, cross-model validation, and plan evaluation.
 
-The server should be:
+The tool should be:
+- **CLI-first** — the primary interface is a CLI tool, not an MCP server. MCP is an optional transport wrapper for IDE integration. CLI is 10-32x cheaper in token overhead and 100% reliable vs MCP's 72% (industry benchmarks, March 2026)
 - **Ours** — not a fork with upstream constraints, but a purpose-built tool we own and extend freely
-- **Consolidated but not monolithic** — PAL stays as the MCP server; CLIProxyAPI and qwen-code-oai-proxy remain separate services (different concerns, different languages)
+- **Consolidated but not monolithic** — our tool handles orchestration; CLIProxyAPI and qwen-code-oai-proxy remain separate services (different concerns, different languages)
 - **Configurable** — consensus panels, review types, and model tiers are user-defined
 - **Resilient** — rate limiting, health monitoring, automatic failover, and config that can't be accidentally wiped
+
+### CLI-First Architecture
+
+The industry is moving away from MCP-first designs. Perplexity dropped MCP in March 2026. CLI tools consume 1.3K tokens vs 44K for equivalent MCP tool schemas. Any LLM agent can shell out to a CLI tool natively.
+
+```
+Our tool (CLI-native)
+├── CLI interface (primary — any agent can call it)
+├── MCP wrapper (optional — for Claude Code / IDE integration only)
+└── Provider layer (GLM, Gemini, Groq, Mercury, local models via CLIProxyAPI)
+```
+
+The core logic (consensus, routing, health monitoring) lives in the CLI. MCP is a thin transport layer that exposes the same tools to IDE-based agents.
 
 ## Three-Service Architecture (Confirmed)
 
@@ -112,6 +126,34 @@ The system should support hybrid consensus where:
 - Some reviewers are Claude sub-agents
 - The orchestrator doesn't share responses between reviewers (blinded)
 - Results are compiled into the same consensus table format
+
+## Model Routing (Confirmed)
+
+| Priority | Model | When |
+|----------|-------|------|
+| Primary | `g25-pro` | Default — strongest free model when available |
+| Secondary | `glm-4.5` / `glm-4.6v` | Fallback when Gemini Pro is down; high concurrency (10 each), paid plan with plenty of credits |
+| Tertiary | `gemini-flash` | 1M context tasks, or when both Pro and GLM unavailable |
+| Complex | `glm-5` | Complex single reasoning tasks only (2 concurrency limit) |
+| Speed | `groq-llama` / `groq-qwen` | Fast tier, quick checks |
+
+### Default Consensus Panel
+
+`glm-4.5` + `glm-4.6v` + `gemini-flash` — model diversity, all working, high concurrency. When `g25-pro` is available, swap one GLM for it.
+
+### GLM Models on Coding Pro Plan
+
+Only certain models are available on the coding endpoint. Tested 2026-03-28:
+
+| Model | Coding Endpoint | Concurrency |
+|-------|----------------|-------------|
+| `glm-4.5` | Works | 10 |
+| `glm-4.5v` | Works | 10 |
+| `glm-4.6v` | Works | 10 |
+| `glm-5` | Works | 2 |
+| `glm-4.7` | Works | 2 |
+| `glm-5-turbo` | Works | 1 |
+| `glm-4-plus` | Not on coding plan | — |
 
 ## What to Keep from v1
 
