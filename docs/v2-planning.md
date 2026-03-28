@@ -131,8 +131,8 @@ The system should support hybrid consensus where:
 
 | Priority | Model | When |
 |----------|-------|------|
-| Primary | `g25-pro` | Default — strongest free model when available |
-| Secondary | `glm-4.5` / `glm-4.6v` | Fallback when Gemini Pro is down; high concurrency (10 each), paid plan with plenty of credits |
+| Co-Primary | `g25-pro` + `glm-4.5` / `glm-4.6v` | Default — both used together. g25-pro is strongest free model, GLM has paid credits with high concurrency (10 each) |
+| Fallback | `glm-4.5` / `glm-4.6v` sole primary | When g25-pro is unavailable (Google bugs, rate limits), GLM takes over as sole primary |
 | Tertiary | `gemini-flash` | 1M context tasks, or when both Pro and GLM unavailable |
 | Complex | `glm-5` | Complex single reasoning tasks only (2 concurrency limit) |
 | Speed | `groq-llama` / `groq-qwen` | Fast tier, quick checks |
